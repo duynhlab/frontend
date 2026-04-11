@@ -2,7 +2,7 @@
 # Stage 1: Build Frontend with Node 24
 # ===================================
 FROM node:24-alpine AS builder
-RUN apk add --no-cache --upgrade zlib
+RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3
 
 # Build argument for API base URL (optional - defaults to relative URLs for Nginx proxy)
 ARG API_BASE_URL=""
@@ -30,7 +30,7 @@ RUN ls -la /app/dist
 # Stage 2: Production with Nginx
 # ===================================
 FROM nginx:alpine
-RUN apk add --no-cache --upgrade zlib
+RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
