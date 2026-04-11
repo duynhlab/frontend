@@ -1,30 +1,17 @@
-name: CI Pipeline
+name: Build
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
 
 permissions:
   contents: read
   packages: write
-  pull-requests: read
   id-token: write
   actions: read
   security-events: write
 
 jobs:
-  # 1. PR Checks (Branch Name + Slack "PR Opened")
-  pr-checks:
-    if: github.event_name == 'pull_request'
-    uses: duyhenryer/shared-workflows/.github/workflows/pr-checks.yml@main
-    with:
-      slack_channel_id: "C0AD82A9A74"
-    secrets:
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-  # 2. Lint & Build
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -45,10 +32,8 @@ jobs:
       - name: Build
         run: npm run build
 
-  # 2. Docker Build & Push (Main Only)
   docker-build:
     needs: lint
-    if: github.ref == 'refs/heads/main'
     uses: duyhenryer/shared-workflows/.github/workflows/docker-build-node.yml@main
     with:
       image-name: '${{ github.event.repository.name }}'
@@ -60,7 +45,6 @@ jobs:
       packages: write
       actions: read
 
-  # 3. Trivy Vulnerability Scan
   trivy-scan:
     needs: [docker-build]
     uses: duyhenryer/shared-workflows/.github/workflows/trivy-scan.yml@main
@@ -75,7 +59,6 @@ jobs:
       packages: read
       security-events: write
 
-  # 4. Cosign Signing (only after scan passes)
   docker-sign:
     needs: [docker-build, trivy-scan]
     uses: duyhenryer/shared-workflows/.github/workflows/docker-sign.yml@main
@@ -88,14 +71,12 @@ jobs:
       packages: write
       id-token: write
 
-  # 5. Final Status Notification + Google Sheets Reporting
   notify:
     if: always()
-    needs: [pr-checks, lint, docker-build, trivy-scan, docker-sign]
+    needs: [lint, docker-build, trivy-scan, docker-sign]
     uses: duyhenryer/shared-workflows/.github/workflows/status.yml@main
     with:
       slack_channel_id: "C0AD82A9A74"
-      slack_thread_ts: ${{ needs.pr-checks.outputs.slack_thread_ts }}
       gsheet_spreadsheet_id: "1F2VUrAOyMGnETApp5yA-ldCW81ConiQXnWYZVxKas_0"
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
