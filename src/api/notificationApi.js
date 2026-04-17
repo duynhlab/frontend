@@ -1,44 +1,43 @@
 import apiClient from './client';
 
 /**
- * Notification API (v1 endpoints)
- * Consumes real backend API endpoints
+ * Notification API — Variant A edge paths (all private, JWT required).
+ * Cluster mounts (reference): /api/v1/notifications, /api/v1/notifications/count, /api/v1/notifications/:id
+ *
+ * Internal `/api/v1/notify/{email,sms}` endpoints are NOT routed through the
+ * gateway; they are service-to-service only.
  */
 
 /**
- * Get all notifications for current user
- * GET /api/v1/notifications
+ * GET /notification/v1/private/notifications  →  /api/v1/notifications
  */
 export async function getNotifications() {
-    const response = await apiClient.get('/notifications');
+    const response = await apiClient.get('/notification/v1/private/notifications');
     return response.data;
 }
 
 /**
- * Get notification by ID
- * GET /api/v1/notifications/:id
- * @param {string} id - Notification ID
+ * GET /notification/v1/private/notifications/:id  →  /api/v1/notifications/:id
  */
 export async function getNotification(id) {
-    const response = await apiClient.get(`/notifications/${id}`);
+    const response = await apiClient.get(`/notification/v1/private/notifications/${id}`);
     return response.data;
 }
 
 /**
- * Mark notification as read
- * PATCH /api/v1/notifications/:id
- * @param {string} id - Notification ID
+ * PATCH /notification/v1/private/notifications/:id  →  /api/v1/notifications/:id
  */
 export async function markAsRead(id) {
-    const response = await apiClient.patch(`/notifications/${id}`);
+    const response = await apiClient.patch(`/notification/v1/private/notifications/${id}`);
     return response.data;
 }
 
 /**
- * Get unread notification count
- * GET /api/v1/notifications/count
+ * GET /notification/v1/private/notifications/count  →  /api/v1/notifications/count
+ * Called by the bell-badge on a short poll; pass `skipAuthRefresh` so that
+ * a 401 here does not yank the user to /login.
  */
 export async function getNotificationCount(config = {}) {
-    const response = await apiClient.get('/notifications/count', config);
+    const response = await apiClient.get('/notification/v1/private/notifications/count', config);
     return response.data;
 }
