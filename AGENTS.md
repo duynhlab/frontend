@@ -73,8 +73,10 @@ npm run lint
 Create `.env` file:
 
 ```env
-VITE_API_URL=http://localhost:8080/api/v1
+VITE_API_BASE_URL=http://gateway.duynhne.me
 ```
+
+Each `src/api/*.js` module owns its `/{service}/v1/{audience}` prefix — `VITE_API_BASE_URL` is just the gateway origin.
 
 ### Docker Build
 
@@ -118,7 +120,7 @@ https://gateway.duynhne.me/{service}/v1/{audience}/{resource...}
 
 - `{service}` — one of the 8 services listed above.
 - `{audience}` — `public` (anonymous) or `private` (JWT). Never `internal`.
-- Kong rewrites the edge path to the cluster `/api/v1/*` handler. Service code is unchanged.
+- Services mount these exact paths on their HTTP routers (Variant A — no rewriting). Kong is pure pass-through.
 
 **Base URL** — `src/api/config.js` reads `VITE_API_BASE_URL`; defaults to `http://gateway.duynhne.me`. Every `src/api/*.js` module owns its own `/{service}/v1/{audience}` prefix (do NOT set the prefix in `config.js` — the module is where the audience decision lives).
 
@@ -136,4 +138,4 @@ https://gateway.duynhne.me/{service}/v1/{audience}/{resource...}
 
 **CORS** — `duynhne.me` hits `gateway.duynhne.me` cross-origin. Kong's `cors-policy` `KongClusterPlugin` allows `http(s)://duynhne.me` with `credentials: true` and permits the `Authorization` header.
 
-**Convention source of truth:** [`homelab/docs/api/api-naming-convention.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md). Do NOT reintroduce relative `/api/v1/*` paths in frontend code — the Nginx static container no longer proxies `/api` to anything.
+**Convention source of truth:** [`homelab/docs/api/api-naming-convention.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md). The Nginx static container serves only the SPA bundle; all API calls go cross-origin to `gateway.duynhne.me` — no `/api` proxying inside the frontend pod.

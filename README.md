@@ -41,7 +41,7 @@ All HTTP calls go through Kong at the origin above using **Variant A edge naming
 {VITE_API_BASE_URL}/{service}/v1/{audience}/{resource...}
 ```
 
-Kong rewrites each edge path to the cluster `/api/v1/*` handler; service code is unchanged. See [`AGENTS.md`](AGENTS.md) for the per-function path table, and the [homelab naming convention](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md) for the authoritative mapping.
+Services mount these exact paths on their HTTP routers — Kong is pure pass-through, no rewriting. See [`AGENTS.md`](AGENTS.md) for the per-function path table, and the [homelab naming convention](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md) for the full route inventory.
 
 ## Build
 
