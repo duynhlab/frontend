@@ -73,8 +73,10 @@ npm run lint
 Create `.env` file:
 
 ```env
-VITE_API_URL=http://localhost:8080/api/v1
+VITE_API_BASE_URL=http://gateway.duynhne.me
 ```
+
+Each `src/api/*.js` module owns its `/{service}/v1/{audience}` prefix — `VITE_API_BASE_URL` is just the gateway origin.
 
 ### Docker Build
 
@@ -104,3 +106,36 @@ Communicates with:
 - `product-service` - Product catalog
 - `cart-service` - Shopping cart
 - `order-service` - Order processing
+- `review-service` - Product reviews
+- `notification-service` - User notifications
+- `shipping-service` - Track & estimate
+
+## 🌐 API Integration
+
+The frontend calls the backend through a single Kong gateway using **Variant A edge naming**:
+
+```
+https://gateway.duynhne.me/{service}/v1/{audience}/{resource...}
+```
+
+- `{service}` — one of the 8 services listed above.
+- `{audience}` — `public` (anonymous) or `private` (JWT). Never `internal`.
+- Services mount these exact paths on their HTTP routers (Variant A — no rewriting). Kong is pure pass-through.
+
+**Base URL** — `src/api/config.js` reads `VITE_API_BASE_URL`; defaults to `http://gateway.duynhne.me`. Every `src/api/*.js` module owns its own `/{service}/v1/{audience}` prefix (do NOT set the prefix in `config.js` — the module is where the audience decision lives).
+
+**Examples:**
+
+| Function | Edge path (what the browser sends) | Audience |
+|----------|------------------------------------|----------|
+| `login(username, password)` | `POST /auth/v1/public/login` | public |
+| `getProducts()` | `GET /product/v1/public/products` | public |
+| `getCart()` | `GET /cart/v1/private/cart` | private |
+| `createOrder(data)` | `POST /order/v1/private/orders` | private |
+| `getNotifications()` | `GET /notification/v1/private/notifications` | private |
+
+**Auth header** — `client.js` reads `localStorage.authToken` and sends `Authorization: Bearer <token>` on every request. On a 401 it clears the token and redirects to `/login` (unless the call opts out via `skipAuthRefresh: true` — used by the badge pollers for cart count and notification count so a transient 401 does not log the user out).
+
+**CORS** — `duynhne.me` hits `gateway.duynhne.me` cross-origin. Kong's `cors-policy` `KongClusterPlugin` allows `http(s)://duynhne.me` with `credentials: true` and permits the `Authorization` header.
+
+**Convention source of truth:** [`homelab/docs/api/api-naming-convention.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md). The Nginx static container serves only the SPA bundle; all API calls go cross-origin to `gateway.duynhne.me` — no `/api` proxying inside the frontend pod.

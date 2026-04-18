@@ -4,38 +4,36 @@ import { mockGetProducts } from './mockData';
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 /**
- * Product API
- * Consumes real backend API endpoints
- * When VITE_USE_MOCK=true, returns mock data instead
+ * Product API — Variant A edge paths (all public).
+ * Cluster mounts (reference): /api/v1/products, /api/v1/products/:id, /api/v1/products/:id/details
+ *
+ * When VITE_USE_MOCK=true, getProducts returns mock data without touching the network.
  */
 
 /**
- * Get all products
- * GET /api/v1/products
+ * GET /product/v1/public/products  →  /api/v1/products
  */
 export async function getProducts(params = {}) {
     if (USE_MOCK) {
         return mockGetProducts(params);
     }
-    const response = await apiClient.get('/products', { params });
-    // Response format: { items: [], total: number }
+    const response = await apiClient.get('/product/v1/public/products', { params });
     return response.data;
 }
 
 /**
- * Get single product by ID (basic)
- * GET /api/v1/products/:id
+ * GET /product/v1/public/products/:id  →  /api/v1/products/:id
  */
 export async function getProduct(id) {
-    const response = await apiClient.get(`/products/${id}`);
+    const response = await apiClient.get(`/product/v1/public/products/${id}`);
     return response.data;
 }
 
 /**
- * Get aggregated product details (Phase 1 aggregation endpoint)
- * GET /api/v1/products/:id/details
+ * GET /product/v1/public/products/:id/details  →  /api/v1/products/:id/details
+ * Aggregation endpoint — use this for the Product Detail Page.
  */
 export async function getProductDetails(id) {
-    const response = await apiClient.get(`/products/${id}/details`);
+    const response = await apiClient.get(`/product/v1/public/products/${id}/details`);
     return response.data;
 }

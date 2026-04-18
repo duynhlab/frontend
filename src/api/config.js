@@ -1,23 +1,28 @@
 /**
  * API Configuration
- * Nginx reverse proxy handles routing to microservices
+ *
+ * Browser traffic hits Kong at `gateway.duynhne.me` using Variant A edge
+ * naming: `/{service}/v1/{audience}/{resource...}`. Kong rewrites these to
+ * cluster `/api/v1/*` paths before proxying to the service.
+ *
+ * See: https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md
  */
-
-// API version prefix - application constant
-const API_PREFIX = '/api/v1';
 
 /**
- * Get API base URL - relative path since Nginx proxies
- * @returns {string} API prefix (e.g., "/api/v1")
+ * Edge gateway origin. Each api module owns its `/{service}/v1/{audience}`
+ * prefix — config.js only decides the host.
+ *
+ * VITE_API_BASE_URL overrides the default (useful for local dev pointing at
+ * a port-forwarded gateway, or for a staging env).
  */
 export const getApiBaseUrl = () => {
-    // Use relative URLs - Nginx in same container will proxy
-    return API_PREFIX;
+    return import.meta.env.VITE_API_BASE_URL || 'http://gateway.duynhne.me';
 };
 
 /**
- * Get base domain (empty for relative URLs)
- * @returns {string} Empty string for relative URLs
+ * Kept for backwards compatibility with any caller that still imports this.
+ * Returns an empty string because every api module now sends absolute paths
+ * relative to the gateway origin.
  */
 export const getBaseDomain = () => {
     return '';
