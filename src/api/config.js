@@ -16,7 +16,7 @@
  * a port-forwarded gateway, or for a staging env).
  */
 export const getApiBaseUrl = () => {
-    return import.meta.env.VITE_API_BASE_URL || 'http://gateway.duynhne.me';
+    return import.meta.env.VITE_API_BASE_URL || 'https://gateway.duynhne.me';
 };
 
 /**
