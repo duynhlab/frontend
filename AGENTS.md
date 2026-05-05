@@ -73,7 +73,7 @@ npm run lint
 Create `.env` file:
 
 ```env
-VITE_API_BASE_URL=http://gateway.duynhne.me
+VITE_API_BASE_URL=https://gateway.duynhne.me
 ```
 
 Each `src/api/*.js` module owns its `/{service}/v1/{audience}` prefix — `VITE_API_BASE_URL` is just the gateway origin.
