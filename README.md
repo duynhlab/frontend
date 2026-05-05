@@ -30,7 +30,7 @@ npm run dev
 
 | Name | Default | Purpose |
 |------|---------|---------|
-| `VITE_API_BASE_URL` | `http://gateway.duynhne.me` | Kong gateway origin. Override for local dev against a port-forwarded gateway, CI, or staging. |
+| `VITE_API_BASE_URL` | `http://gateway.duynh.me` | Kong gateway origin. Override for local dev against a port-forwarded gateway, CI, or staging. |
 | `VITE_USE_MOCK` | `false` | If `true`, `productApi.getProducts()` returns in-memory mock data (no network call). Useful for UI-only work without the backend running. |
 
 ### API integration
