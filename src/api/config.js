@@ -1,7 +1,7 @@
 /**
  * API Configuration
  *
- * Browser traffic hits Kong at `gateway.duynhne.me` using Variant A edge
+ * Browser traffic hits Kong at `gateway.duynh.me` using Variant A edge
  * naming: `/{service}/v1/{audience}/{resource...}`. Kong rewrites these to
  * cluster `/api/v1/*` paths before proxying to the service.
  *
@@ -16,7 +16,7 @@
  * a port-forwarded gateway, or for a staging env).
  */
 export const getApiBaseUrl = () => {
-    return import.meta.env.VITE_API_BASE_URL || 'https://gateway.duynhne.me';
+    return import.meta.env.VITE_API_BASE_URL || 'https://gateway.duynh.me';
 };
 
 /**
