@@ -288,12 +288,12 @@ export default function ProductDetailPage() {
                                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                         <button
                                             className="primary"
-                                            onClick={() => navigate(`/login?returnTo=/products/${id}#reviews&mode=login`)}
+                                            onClick={() => navigate('/login?mode=login&returnTo=' + encodeURIComponent(`/products/${id}#reviews`))}
                                         >
                                             Login
                                         </button>
                                         <button
-                                            onClick={() => navigate(`/login?returnTo=/products/${id}#reviews&mode=register`)}
+                                            onClick={() => navigate('/login?mode=register&returnTo=' + encodeURIComponent(`/products/${id}#reviews`))}
                                         >
                                             Register
                                         </button>
