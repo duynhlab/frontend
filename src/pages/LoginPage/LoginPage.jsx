@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, register } from '../../api/authApi';
+import { clearSession } from '../../auth/session';
 import { useToast } from '../../components/common/ToastProvider';
 
 /**
@@ -26,9 +27,9 @@ export default function LoginPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const [form, setForm] = useState({
-        username: 'alice',
-        email: 'alice@example.com',
-        password: 'password123'
+        username: '',
+        email: '',
+        password: ''
     });
 
     // Check if user is already authenticated
@@ -44,13 +45,9 @@ export default function LoginPage() {
         }
     }, [initialMode]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
+    const handleLogout = async () => {
+        await clearSession();
         setIsAuthenticated(false);
-        // Dispatch custom event for same-tab updates
-        window.dispatchEvent(new Event('auth-change'));
-        window.dispatchEvent(new Event('storage'));
     };
 
     const handleSubmit = async (e) => {
