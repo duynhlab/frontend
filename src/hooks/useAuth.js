@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { clearSession } from '../auth/session';
 
 /**
  * useAuth Hook
@@ -53,10 +54,9 @@ export function useAuth() {
         };
     }, []);
 
-    // Logout function
+    // Logout: revoke the server session (best-effort) and clear local state.
     const logout = useCallback(() => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
+        clearSession();
         setAuthState({ token: null, user: null });
     }, []);
 

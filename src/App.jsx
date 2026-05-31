@@ -5,6 +5,8 @@ import { getCartCount } from './api/cartApi';
 import { getNotificationCount } from './api/notificationApi';
 import Footer from './components/common/Footer';
 import { GridSkeleton } from './components/common/Skeleton';
+import ProtectedRoute from './components/ProtectedRoute';
+import { clearSession } from './auth/session';
 
 // Code splitting: Lazy load pages for better initial bundle size
 const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
@@ -59,9 +61,8 @@ function App() {
         setIsAuthenticated(!!token);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('authUser');
+    const handleLogout = async () => {
+        await clearSession();
         setIsAuthenticated(false);
         navigate('/login');
     };
@@ -123,11 +124,11 @@ function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/products" element={<ProductListPage />} />
                         <Route path="/products/:id" element={<ProductDetailPage />} />
-                        <Route path="/cart" element={<CartPage />} />
-                        <Route path="/checkout" element={<CheckoutPage />} />
-                        <Route path="/orders" element={<OrdersPage />} />
-                        <Route path="/notifications" element={<NotificationPage />} />
-                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                        <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                        <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                        <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
+                        <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                         <Route path="/login" element={<LoginPage />} />
                     </Routes>
                 </Suspense>

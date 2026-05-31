@@ -13,7 +13,10 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor - Add auth token if available
+// Request interceptor - Add auth token if available.
+// NOTE: the token is read from localStorage, which is exposed to any injected
+// script (XSS). Migrating to an httpOnly cookie issued by auth-service is a
+// planned follow-up (requires auth-service to set it and the gateway to forward).
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('authToken');
@@ -38,9 +41,12 @@ apiClient.interceptors.response.use(
                 // Prevent redirect loop if already on login page
                 if (!window.location.pathname.includes('/login')) {
                     localStorage.removeItem('authToken');
+                    localStorage.removeItem('authUser');
                     window.dispatchEvent(new Event('auth-change'));
                     window.dispatchEvent(new Event('storage'));
-                    window.location.href = '/login';
+                    // Preserve where the user was so login can send them back.
+                    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = `/login?returnTo=${returnTo}`;
                 }
             }
 

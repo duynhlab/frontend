@@ -28,3 +28,12 @@ export async function getMe() {
     const response = await apiClient.get('/auth/v1/private/me');
     return response.data;
 }
+
+/**
+ * POST /auth/v1/private/logout — revokes the current session token server-side.
+ * Best-effort: callers should clear local auth state regardless of the result.
+ */
+export async function logout() {
+    const response = await apiClient.post('/auth/v1/private/logout');
+    return response.data;
+}
