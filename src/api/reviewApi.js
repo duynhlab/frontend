@@ -7,12 +7,13 @@ import apiClient from './client';
 
 /**
  * GET /review/v1/public/reviews?product_id={id}  →  /api/v1/reviews
+ * Paginated envelope: { items, page, page_size, total_items, total_pages }.
  */
 export async function getReviews(productId) {
     const response = await apiClient.get('/review/v1/public/reviews', {
         params: { product_id: productId }
     });
-    return response.data;
+    return response.data?.items ?? [];
 }
 
 /**

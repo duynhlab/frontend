@@ -12,6 +12,8 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 /**
  * GET /product/v1/public/products  →  /api/v1/products
+ * Returns the paginated envelope { items, page, page_size, total_items, total_pages };
+ * callers read the array from `.items` (see useProducts).
  */
 export async function getProducts(params = {}) {
     if (USE_MOCK) {

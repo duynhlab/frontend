@@ -10,10 +10,11 @@ import apiClient from './client';
 
 /**
  * GET /notification/v1/private/notifications  →  /api/v1/notifications
+ * Paginated envelope: { items, page, page_size, total_items, total_pages }.
  */
 export async function getNotifications() {
     const response = await apiClient.get('/notification/v1/private/notifications');
-    return response.data;
+    return response.data?.items ?? [];
 }
 
 /**
