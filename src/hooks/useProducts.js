@@ -18,10 +18,12 @@ export function useProducts({ page = 1, limit = 30 } = {}) {
         }
     );
 
+    // Paginated envelope: real API uses total_items/total_pages; the mock uses total.
+    const total = data?.total_items ?? data?.total ?? 0;
     return {
         products: data?.items || [],
-        total: data?.total || 0,
-        totalPages: data?.total ? Math.ceil(data.total / limit) : 0,
+        total,
+        totalPages: data?.total_pages ?? (total ? Math.ceil(total / limit) : 0),
         loading: isLoading,
         error: error?.message || null,
     };
