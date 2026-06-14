@@ -34,7 +34,7 @@ jobs:
 
   docker-build:
     needs: lint
-    uses: duyhenryer/shared-workflows/.github/workflows/docker-build-node.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@main
     with:
       image-name: '${{ github.event.repository.name }}'
       push: true
@@ -47,7 +47,7 @@ jobs:
 
   trivy-scan:
     needs: [docker-build]
-    uses: duyhenryer/shared-workflows/.github/workflows/trivy-scan.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/trivy-scan.yml@main
     with:
       image-ref: ghcr.io/${{ github.repository }}/${{ github.event.repository.name }}@${{ needs.docker-build.outputs.digest }}
       severity: 'CRITICAL,HIGH'
@@ -61,7 +61,7 @@ jobs:
 
   docker-sign:
     needs: [docker-build, trivy-scan]
-    uses: duyhenryer/shared-workflows/.github/workflows/docker-sign.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/docker-sign.yml@main
     with:
       tags: ${{ needs.docker-build.outputs.tags }}
       digest: ${{ needs.docker-build.outputs.digest }}
@@ -74,7 +74,7 @@ jobs:
   notify:
     if: always()
     needs: [lint, docker-build, trivy-scan, docker-sign]
-    uses: duyhenryer/shared-workflows/.github/workflows/status.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/status.yml@main
     with:
       slack_channel_id: "C0AD82A9A74"
       gsheet_spreadsheet_id: "1F2VUrAOyMGnETApp5yA-ldCW81ConiQXnWYZVxKas_0"
