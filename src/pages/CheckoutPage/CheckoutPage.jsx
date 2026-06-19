@@ -5,10 +5,11 @@ import { getCart, clearCart } from '../../api/cartApi';
 import { createOrder } from '../../api/orderApi';
 import { useToast } from '../../components/common/ToastProvider';
 import { toUserFriendlyError } from '../../utils/errorMessages';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 /**
  * Checkout Page - Create order
- * POST /api/v1/orders
+ * POST /order/v1/private/orders
  * user_id extracted from auth token by backend
  */
 export default function CheckoutPage() {
@@ -97,7 +98,7 @@ export default function CheckoutPage() {
         <div className="page container">
             <Link to="/cart" className="back-link">← Back to Cart</Link>
             <h2>Checkout</h2>
-            <p className="api-label">API: POST /api/v1/orders</p>
+            <p className="api-label">API: POST /order/v1/private/orders</p>
 
             {/* Loading */}
             {loading && <div className="loading">Loading...</div>}
@@ -109,7 +110,7 @@ export default function CheckoutPage() {
                         <h3>✅ Order Created Successfully!</h3>
                         <p>Order ID: {orderResult.id}</p>
                         <p>Status: {orderResult.status}</p>
-                        <p>Total: ${orderResult.total?.toFixed(2)}</p>
+                        <p>Total: {formatCurrency(orderResult.total)}</p>
                     </div>
                     <button onClick={() => navigate('/orders')} style={{ marginTop: '0.75rem' }}>
                         View Orders
@@ -166,8 +167,8 @@ export default function CheckoutPage() {
                                             <tr key={item.id}>
                                                 <td>{item.product_name}</td>
                                                 <td>{item.quantity}</td>
-                                                <td className="hide-mobile">${item.product_price}</td>
-                                                <td>${item.subtotal?.toFixed(2)}</td>
+                                                <td className="hide-mobile">{formatCurrency(item.product_price)}</td>
+                                                <td>{formatCurrency(item.subtotal)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -180,9 +181,9 @@ export default function CheckoutPage() {
                             <h3>Order Summary</h3>
                             <table>
                                 <tbody>
-                                    <tr><th>Subtotal</th><td>${cart.subtotal?.toFixed(2)}</td></tr>
-                                    <tr><th>Shipping</th><td>${cart.shipping?.toFixed(2)}</td></tr>
-                                    <tr><th><strong>Total</strong></th><td><strong>${cart.total?.toFixed(2)}</strong></td></tr>
+                                    <tr><th>Subtotal</th><td>{formatCurrency(cart.subtotal)}</td></tr>
+                                    <tr><th>Shipping</th><td>{formatCurrency(cart.shipping)}</td></tr>
+                                    <tr><th><strong>Total</strong></th><td><strong>{formatCurrency(cart.total)}</strong></td></tr>
                                 </tbody>
                             </table>
 

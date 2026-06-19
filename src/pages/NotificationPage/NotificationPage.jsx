@@ -13,8 +13,8 @@ import './NotificationPage.css';
 
 /**
  * NotificationPage
- * API: GET /api/v1/notifications
- * API: PATCH /api/v1/notifications/:id
+ * API: GET /notification/v1/private/notifications
+ * API: PATCH /notification/v1/private/notifications/:id
  * 
  * Displays user notifications with read/unread status
  * Uses shared hooks for consistent data fetching and auth
@@ -105,7 +105,7 @@ export default function NotificationPage() {
                 title="Notifications" 
                 backLink="/" 
                 backText="← Back to Home"
-                apiLabel={`API: GET /api/v1/notifications • ${notificationsList.length} items`}
+                apiLabel={`API: GET /notification/v1/private/notifications • ${notificationsList.length} items`}
             />
 
             {/* Loading State */}
@@ -113,7 +113,7 @@ export default function NotificationPage() {
 
             {/* Error State */}
             {!loading && error && (
-                <ApiError error={error} endpoint="GET /api/v1/notifications" />
+                <ApiError error={error} endpoint="GET /notification/v1/private/notifications" />
             )}
 
             {/* Empty State */}

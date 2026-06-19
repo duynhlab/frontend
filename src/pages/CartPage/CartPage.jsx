@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
 import { useToast } from '../../components/common/ToastProvider';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 /**
  * Cart Page - Full cart operations
- * GET /api/v1/cart
- * PATCH /api/v1/cart/items/:itemId
- * DELETE /api/v1/cart/items/:itemId
+ * GET /cart/v1/private/cart
+ * PATCH /cart/v1/private/cart/items/:itemId
+ * DELETE /cart/v1/private/cart/items/:itemId
  */
 export default function CartPage() {
     const navigate = useNavigate();
@@ -112,7 +113,7 @@ export default function CartPage() {
     return (
         <div className="page container">
             <h2>Shopping Cart</h2>
-            <p className="api-label">API: GET /api/v1/cart</p>
+            <p className="api-label">API: GET /cart/v1/private/cart</p>
 
             {/* Loading */}
             {loading && <div className="loading">Loading cart...</div>}
@@ -138,7 +139,7 @@ export default function CartPage() {
                             <div key={item.id} className="cart-item">
                                 <div>
                                     <strong>{item.product_name}</strong>
-                                    <p className="text-muted">${item.product_price} each</p>
+                                    <p className="text-muted">{formatCurrency(item.product_price)} each</p>
                                 </div>
                                 <div className="cart-item-actions">
                                     <button
@@ -150,7 +151,7 @@ export default function CartPage() {
                                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                                         disabled={actionLoading === item.id}
                                     >+</button>
-                                    <span className="cart-item-subtotal">${item.subtotal?.toFixed(2)}</span>
+                                    <span className="cart-item-subtotal">{formatCurrency(item.subtotal)}</span>
                                     <button
                                         className="danger"
                                         onClick={() => handleRemoveItem(item.id)}
@@ -166,9 +167,9 @@ export default function CartPage() {
                         <h3>Order Summary</h3>
                         <table>
                             <tbody>
-                                <tr><th>Subtotal</th><td>${cart.subtotal?.toFixed(2)}</td></tr>
-                                <tr><th>Shipping</th><td>${cart.shipping?.toFixed(2)}</td></tr>
-                                <tr><th><strong>Total</strong></th><td><strong>${cart.total?.toFixed(2)}</strong></td></tr>
+                                <tr><th>Subtotal</th><td>{formatCurrency(cart.subtotal)}</td></tr>
+                                <tr><th>Shipping</th><td>{formatCurrency(cart.shipping)}</td></tr>
+                                <tr><th><strong>Total</strong></th><td><strong>{formatCurrency(cart.total)}</strong></td></tr>
                             </tbody>
                         </table>
                         <Link to="/checkout">

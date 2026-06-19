@@ -2,11 +2,11 @@ import apiClient from './client';
 
 /**
  * User API — Variant A edge paths.
- * Cluster mounts (reference): /api/v1/users, /api/v1/users/:id, /api/v1/users/profile
+ * Edge paths (gateway pass-through): /user/v1/private/users/profile, /user/v1/public/users/:id
  */
 
 /**
- * GET /user/v1/private/users/profile  →  /api/v1/users/profile
+ * GET /user/v1/private/users/profile
  */
 export async function getUserProfile() {
     const response = await apiClient.get('/user/v1/private/users/profile');
@@ -14,7 +14,7 @@ export async function getUserProfile() {
 }
 
 /**
- * GET /user/v1/public/users/:id  →  /api/v1/users/:id
+ * GET /user/v1/public/users/:id
  */
 export async function getUser(id) {
     const response = await apiClient.get(`/user/v1/public/users/${id}`);
@@ -22,7 +22,7 @@ export async function getUser(id) {
 }
 
 /**
- * PUT /user/v1/private/users/profile  →  /api/v1/users/profile
+ * PUT /user/v1/private/users/profile
  */
 export async function updateProfile(profileData) {
     const response = await apiClient.put('/user/v1/private/users/profile', profileData);
