@@ -107,7 +107,7 @@ export default function OrdersPage() {
 
             {/* Content */}
             {!loading && !error && (
-                <div className="two-col">
+                <div className="orders-layout">
                     {/* Orders List */}
                     <div className="card orders-history">
                         <h3>Order History</h3>
@@ -205,7 +205,7 @@ function OrderDetailsPanel({ order, shipment, getStatusColor }) {
             </div>
 
             {/* Two-col layout: Order Items (left) + Order Summary (right) - same as Checkout */}
-            <div className="two-col order-details-layout">
+            <div className="order-details-layout">
                 {/* Order Items - table format */}
                 <div className="card order-items-section">
                     <h4>Order Items</h4>
