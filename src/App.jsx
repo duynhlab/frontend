@@ -22,7 +22,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage/LoginPage'));
 /**
  * App Component
  * Proper layout: Header → Main (flex:1) → Footer
- * Uses GET /api/v1/cart/count and /api/v1/notifications/count for badges with SWR
+ * Uses GET /cart/v1/private/cart/count and /notification/v1/private/notifications/count for badges with SWR
  */
 function App() {
     const navigate = useNavigate();

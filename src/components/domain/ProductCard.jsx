@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../common/PlaceholderImage';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 /**
  * ProductCard Component
@@ -14,7 +15,7 @@ export default function ProductCard({ product }) {
             </div>
             <div className="product-info">
                 <h3 className="product-name">{product.name}</h3>
-                <p className="product-price">${product.price}</p>
+                <p className="product-price">{formatCurrency(product.price)}</p>
             </div>
         </Link>
     );

@@ -2,11 +2,11 @@ import apiClient from './client';
 
 /**
  * Cart API — Variant A edge paths (all private, JWT required).
- * Cluster mounts (reference): /api/v1/cart, /api/v1/cart/count, /api/v1/cart/items/:itemId
+ * Edge paths (gateway pass-through): /cart/v1/private/cart, /cart/count, /cart/items/:itemId
  */
 
 /**
- * GET /cart/v1/private/cart  →  /api/v1/cart
+ * GET /cart/v1/private/cart
  */
 export async function getCart() {
     const response = await apiClient.get('/cart/v1/private/cart');
@@ -14,7 +14,7 @@ export async function getCart() {
 }
 
 /**
- * GET /cart/v1/private/cart/count  →  /api/v1/cart/count
+ * GET /cart/v1/private/cart/count
  * Called by the cart badge on a short poll; passes `skipAuthRefresh` so that
  * a 401 here does not yank the user to /login.
  */
@@ -24,7 +24,7 @@ export async function getCartCount(config = {}) {
 }
 
 /**
- * POST /cart/v1/private/cart  →  /api/v1/cart
+ * POST /cart/v1/private/cart
  */
 export async function addToCart(productId, productName, productPrice, quantity = 1) {
     const response = await apiClient.post('/cart/v1/private/cart', {
@@ -37,7 +37,7 @@ export async function addToCart(productId, productName, productPrice, quantity =
 }
 
 /**
- * PATCH /cart/v1/private/cart/items/:itemId  →  /api/v1/cart/items/:itemId
+ * PATCH /cart/v1/private/cart/items/:itemId
  */
 export async function updateCartItem(itemId, quantity) {
     const response = await apiClient.patch(`/cart/v1/private/cart/items/${itemId}`, { quantity });
@@ -45,7 +45,7 @@ export async function updateCartItem(itemId, quantity) {
 }
 
 /**
- * DELETE /cart/v1/private/cart/items/:itemId  →  /api/v1/cart/items/:itemId
+ * DELETE /cart/v1/private/cart/items/:itemId
  */
 export async function removeCartItem(itemId) {
     const response = await apiClient.delete(`/cart/v1/private/cart/items/${itemId}`);
@@ -53,7 +53,7 @@ export async function removeCartItem(itemId) {
 }
 
 /**
- * DELETE /cart/v1/private/cart  →  /api/v1/cart
+ * DELETE /cart/v1/private/cart
  */
 export async function clearCart() {
     const response = await apiClient.delete('/cart/v1/private/cart');
