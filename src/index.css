@@ -84,7 +84,9 @@ a:hover {
 
 .header nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.25rem;
+  row-gap: 0.5rem;
   font-size: 0.8125rem;
 }
 
@@ -177,7 +179,8 @@ button.danger {
 
 /* Forms */
 input,
-select {
+select,
+textarea {
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -186,7 +189,8 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: 1px solid var(--accent);
   border-color: var(--accent);
 }
@@ -705,6 +709,7 @@ th {
   border-bottom: 1px solid var(--border);
 }
 
+.order-status,
 .order-status-badge {
   font-weight: 600;
   text-transform: capitalize;
