@@ -9,6 +9,7 @@ import { useToast } from '../../components/common/ToastProvider';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
 import { createReview } from '../../api/reviewApi';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 // Helper functions moved outside component to avoid recreation on every render
 function formatReviewDate(review) {
@@ -25,7 +26,7 @@ function getReviewAuthor(review) {
 
 /**
  * ProductDetailPage
- * 3-Layer Pattern Compliance: Uses aggregation endpoint GET /api/v1/products/:id/details
+ * 3-Layer Pattern Compliance: Uses aggregation endpoint GET /product/v1/public/products/:id/details
  * This endpoint aggregates product details, stock, reviews, and related products.
  * Frontend MUST use aggregation endpoints - no client-side orchestration.
  */
@@ -196,14 +197,14 @@ export default function ProductDetailPage() {
     return (
         <div className="page container">
             <Link to="/" className="back-link">← Back to Products</Link>
-            <p className="api-label">API: GET /api/v1/products/{id}/details</p>
+            <p className="api-label">API: GET /product/v1/public/products/{id}/details</p>
 
             {/* Loading */}
             {loading && <DetailSkeleton />}
 
             {/* Error */}
             {!loading && error && (
-                <ApiError error={error} endpoint={`GET /api/v1/products/${id}/details`} />
+                <ApiError error={error} endpoint={`GET /product/v1/public/products/${id}/details`} />
             )}
 
             {/* Empty */}
@@ -222,7 +223,7 @@ export default function ProductDetailPage() {
                         <div className="detail-info">
                             <h1>{data.product.name}</h1>
                             <p className="detail-description">{data.product.description}</p>
-                            <p className="detail-price">${data.product.price}</p>
+                            <p className="detail-price">{formatCurrency(data.product.price)}</p>
 
                             {data.stock && (
                                 <p className={data.stock.available ? 'stock-available' : 'stock-out'}>

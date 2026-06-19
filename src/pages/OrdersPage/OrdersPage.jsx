@@ -9,11 +9,12 @@ import Pagination from '../../components/common/Pagination';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 /**
  * Orders Page - List and view orders with shipping tracking
- * API: GET /api/v1/orders - List all orders
- * API: GET /api/v1/orders/:id/details - Get order with shipment (aggregation)
+ * API: GET /order/v1/private/orders - List all orders
+ * API: GET /order/v1/private/orders/:id/details - Get order with shipment (aggregation)
  * 
  * Uses aggregation endpoint for strict 3-layer compliance
  */
@@ -98,7 +99,7 @@ export default function OrdersPage() {
                 title="My Orders" 
                 backLink="/" 
                 backText="← Back to Home"
-                apiLabel={`API: GET /api/v1/orders • ${total} orders • Page ${page} of ${totalPages || 1}`}
+                apiLabel={`API: GET /order/v1/private/orders • ${total} orders • Page ${page} of ${totalPages || 1}`}
             />
 
             {/* Loading */}
@@ -140,7 +141,7 @@ export default function OrdersPage() {
                                                         {order.status}
                                                     </span>
                                                 </td>
-                                                <td>${order.total?.toFixed(2)}</td>
+                                                <td>{formatCurrency(order.total)}</td>
                                                 <td className="hide-mobile">
                                                     {new Date(order.created_at).toLocaleDateString()}
                                                 </td>
@@ -235,8 +236,8 @@ function OrderDetailsPanel({ order, shipment, getStatusColor }) {
                                     <tr key={i}>
                                         <td>{item.product_name}</td>
                                         <td>{item.quantity}</td>
-                                        <td className="hide-mobile">${item.price?.toFixed(2)}</td>
-                                        <td>${item.subtotal?.toFixed(2)}</td>
+                                        <td className="hide-mobile">{formatCurrency(item.price)}</td>
+                                        <td>{formatCurrency(item.subtotal)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -249,11 +250,11 @@ function OrderDetailsPanel({ order, shipment, getStatusColor }) {
                     <h4>Order Summary</h4>
                     <table>
                         <tbody>
-                            <tr><th>Subtotal</th><td>${order.subtotal?.toFixed(2)}</td></tr>
-                            <tr><th>Shipping</th><td>${order.shipping?.toFixed(2)}</td></tr>
+                            <tr><th>Subtotal</th><td>{formatCurrency(order.subtotal)}</td></tr>
+                            <tr><th>Shipping</th><td>{formatCurrency(order.shipping)}</td></tr>
                             <tr className="order-total-row">
                                 <th><strong>Total</strong></th>
-                                <td><strong className="order-total-value">${order.total?.toFixed(2)}</strong></td>
+                                <td><strong className="order-total-value">{formatCurrency(order.total)}</strong></td>
                             </tr>
                         </tbody>
                     </table>

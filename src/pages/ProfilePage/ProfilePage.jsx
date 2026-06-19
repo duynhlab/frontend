@@ -14,8 +14,8 @@ import './ProfilePage.css';
 /**
  * ProfilePage Component
  * Allows users to view and edit their profile
- * API: GET /api/v1/users/profile
- * API: PUT /api/v1/users/profile
+ * API: GET /user/v1/private/users/profile
+ * API: PUT /user/v1/private/users/profile
  */
 export default function ProfilePage() {
     const navigate = useNavigate();
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                 title="My Profile" 
                 backLink="/" 
                 backText="← Back to Home"
-                apiLabel="API: GET /api/v1/users/profile"
+                apiLabel="API: GET /user/v1/private/users/profile"
             />
 
             {/* Loading State */}
@@ -106,7 +106,7 @@ export default function ProfilePage() {
             {!loading && error && (
                 <ApiError
                     error={error}
-                    endpoint="GET /api/v1/users/profile"
+                    endpoint="GET /user/v1/private/users/profile"
                     onRetry={() => mutate()}
                 />
             )}

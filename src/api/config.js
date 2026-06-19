@@ -2,8 +2,9 @@
  * API Configuration
  *
  * Browser traffic hits Kong at `gateway.duynh.me` using Variant A edge
- * naming: `/{service}/v1/{audience}/{resource...}`. Kong rewrites these to
- * cluster `/api/v1/*` paths before proxying to the service.
+ * naming: `/{service}/v1/{audience}/{resource...}`. Kong is pass-through —
+ * it proxies that exact path to the service, with no rewrite. The path the
+ * SPA sends is the path end-to-end (do not add an `/api/v1/*` prefix).
  *
  * See: https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md
  */

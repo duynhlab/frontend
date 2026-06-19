@@ -2,11 +2,11 @@ import apiClient from './client';
 
 /**
  * Review API — Variant A edge paths.
- * Cluster mounts (reference): /api/v1/reviews
+ * Edge paths (gateway pass-through): /review/v1/public/reviews (GET), /review/v1/private/reviews (POST)
  */
 
 /**
- * GET /review/v1/public/reviews?product_id={id}  →  /api/v1/reviews
+ * GET /review/v1/public/reviews?product_id={id}
  * Paginated envelope: { items, page, page_size, total_items, total_pages }.
  */
 export async function getReviews(productId) {
@@ -17,7 +17,7 @@ export async function getReviews(productId) {
 }
 
 /**
- * POST /review/v1/private/reviews  →  /api/v1/reviews
+ * POST /review/v1/private/reviews
  */
 export async function createReview(productId, userId, rating, title, comment) {
     const response = await apiClient.post('/review/v1/private/reviews', {

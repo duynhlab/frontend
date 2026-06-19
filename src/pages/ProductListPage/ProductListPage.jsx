@@ -12,7 +12,7 @@ const PRODUCTS_PER_PAGE = 30;
 
 /**
  * ProductListPage - Product Catalog at /products
- * API: GET /api/v1/products?page=N&limit=30
+ * API: GET /product/v1/public/products?page=N&page_size=30
  *
  * Best practices applied:
  * - rerender-derived-state-no-effect: page derived from URL params, not useState
@@ -55,7 +55,7 @@ export default function ProductListPage() {
 
             {/* Error State */}
             {!loading && error ? (
-                <ApiError error={error} endpoint="GET /api/v1/products" />
+                <ApiError error={error} endpoint="GET /product/v1/public/products" />
             ) : null}
 
             {/* Empty State */}
