@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useSWRConfig } from 'swr';
 import PlaceholderImage from '../../components/common/PlaceholderImage';
 import { DetailSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import ApiError from '../../components/common/ApiError';
+import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
 import { useToast } from '../../components/common/ToastProvider';
+import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
 import { createReview } from '../../api/reviewApi';
@@ -35,12 +38,19 @@ export default function ProductDetailPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const { notify } = useToast();
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { mutate: globalMutate } = useSWRConfig();
 
-    // Reviews from aggregation endpoint (3-layer pattern compliance)
-    const [reviews, setReviews] = useState([]);
+    // Product details via SWR aggregation endpoint (product + stock + reviews)
+    const { data, loading, error, mutate } = useApiQuery(
+        ['product-details', id],
+        () => getProductDetails(id)
+    );
+
+    // Reviews come from the aggregation payload (3-layer compliance)
+    const reviews = useMemo(
+        () => (Array.isArray(data?.reviews) ? data.reviews : []),
+        [data]
+    );
 
     const [quantity, setQuantity] = useState(1);
     const [adding, setAdding] = useState(false);
@@ -64,34 +74,6 @@ export default function ProductDetailPage() {
     const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', comment: '' });
     const [submittingReview, setSubmittingReview] = useState(false);
 
-    // Fetch product details using aggregation endpoint (3-layer pattern)
-    // This endpoint aggregates product + stock + reviews - no client-side orchestration needed
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            setError(null);
-            try {
-                const result = await getProductDetails(id);
-                setData(result);
-                
-                // Use reviews from aggregation endpoint (3-layer compliance)
-                setReviews(result.reviews && Array.isArray(result.reviews) ? result.reviews : []);
-                
-                if (import.meta.env.DEV) {
-                    console.log('[API] GET /products/' + id + '/details:', result);
-                }
-            } catch (err) {
-                setError(err.message);
-                if (import.meta.env.DEV) {
-                    console.error('[API ERROR]:', err);
-                }
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchData();
-    }, [id]);
-
     // Compute hasReviewed: check if current user already has a review for this product
     const hasReviewed = useMemo(() => {
         return isAuthenticated && authUser?.id && reviews.some(
@@ -108,18 +90,6 @@ export default function ProductDetailPage() {
             }
         }
     }, [location.hash, loading]);
-
-    // Refresh reviews by re-fetching aggregation endpoint (3-layer compliance)
-    const refreshReviews = async () => {
-        try {
-            const result = await getProductDetails(id);
-            setReviews(result.reviews && Array.isArray(result.reviews) ? result.reviews : []);
-        } catch (err) {
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR] Failed to refresh reviews:', err);
-            }
-        }
-    };
 
     const handleSubmitReview = async (e) => {
         e.preventDefault();
@@ -142,7 +112,7 @@ export default function ProductDetailPage() {
             notify('success', 'Review submitted!');
             setReviewForm({ rating: 5, title: '', comment: '' });
             // Refresh reviews list - try aggregation first, fallback to direct API
-            await refreshReviews();
+            await mutate();
         } catch (err) {
             // Check for 409 Conflict (duplicate review) - fallback for stale UI state
             const isDuplicate = err.response?.status === 409 ||
@@ -151,7 +121,7 @@ export default function ProductDetailPage() {
             if (isDuplicate) {
                 notify('info', 'You have already reviewed this product.');
                 // Refresh reviews to update hasReviewed and hide the form
-                await refreshReviews();
+                await mutate();
             } else {
                 notify('error', err.message || 'Failed to submit review');
             }
@@ -177,6 +147,7 @@ export default function ProductDetailPage() {
             }
             notify('success', `Added ${quantity} item${quantity > 1 ? 's' : ''} to cart`);
             setQuantity(1);
+            globalMutate('cart-count'); // sync the header cart badge
         } catch (err) {
             notify('error', err.message || 'Failed to add to cart');
             if (import.meta.env.DEV) {
@@ -257,7 +228,11 @@ export default function ProductDetailPage() {
                             <>
                                 <div className="reviews-summary">
                                     <span className="reviews-score">{averageRating}</span>
-                                    <span className="reviews-stars">{'⭐'.repeat(Math.round(averageRating))}</span>
+                                    <span
+                                        className="reviews-stars"
+                                        role="img"
+                                        aria-label={`${averageRating} out of 5 stars`}
+                                    >{'⭐'.repeat(Math.round(averageRating))}</span>
                                     <span className="text-muted">({reviews.length} reviews)</span>
                                 </div>
 
@@ -265,7 +240,11 @@ export default function ProductDetailPage() {
                                     {reviews.map(review => (
                                         <div key={review.id} className="review-item">
                                             <div className="review-header">
-                                                <span className="review-stars">{'⭐'.repeat(review.rating)}</span>
+                                                <span
+                                                    className="review-stars"
+                                                    role="img"
+                                                    aria-label={`${review.rating} out of 5 stars`}
+                                                >{'⭐'.repeat(review.rating)}</span>
                                                 <span className="text-muted">{formatReviewDate(review)}</span>
                                             </div>
                                             {review.title && <h4>{review.title}</h4>}
@@ -352,13 +331,8 @@ export default function ProductDetailPage() {
                 </>
             )}
 
-            {/* API Debug */}
-            {data && (
-                <details className="api-debug">
-                    <summary>API Response</summary>
-                    <pre>{JSON.stringify({ product: data, reviews }, null, 2)}</pre>
-                </details>
-            )}
+            {/* API Debug (dev only) */}
+            <ApiDebug data={{ product: data, reviews }} />
         </div>
     );
 }

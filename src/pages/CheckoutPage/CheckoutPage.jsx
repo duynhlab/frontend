@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { getCart, clearCart } from '../../api/cartApi';
 import { createOrder } from '../../api/orderApi';
+import { useApiQuery } from '../../hooks/useApiQuery';
 import { useToast } from '../../components/common/ToastProvider';
 import { toUserFriendlyError } from '../../utils/errorMessages';
 import { formatCurrency } from '../../utils/formatCurrency';
+import ApiDebug from '../../components/common/ApiDebug';
 
 /**
  * Checkout Page - Create order
@@ -15,47 +17,27 @@ import { formatCurrency } from '../../utils/formatCurrency';
 export default function CheckoutPage() {
     const navigate = useNavigate();
     const { notify } = useToast();
-    const { mutate } = useSWRConfig();
-    const [cart, setCart] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { mutate: globalMutate } = useSWRConfig();
     const [submitting, setSubmitting] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
 
-    const fetchCart = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const result = await getCart();
-            setCart(result);
-            if (import.meta.env.DEV) {
-                console.log('[API] GET /cart:', result);
-            }
-        } catch (err) {
-            const message = toUserFriendlyError(err?.message);
-            setError(message);
-            notify('error', message);
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
-            }
-        } finally {
-            setLoading(false);
-        }
-    }, [notify]);
+    const isAuthenticated = !!localStorage.getItem('authToken');
+
+    // Server state via SWR (shares the 'cart' key with CartPage)
+    const { data: cart, loading, error, mutate } = useApiQuery(
+        isAuthenticated ? 'cart' : null,
+        getCart
+    );
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
+        if (!isAuthenticated) {
             navigate('/login?returnTo=/checkout');
-            return;
         }
-        fetchCart();
-    }, [navigate, fetchCart]);
+    }, [isAuthenticated, navigate]);
 
     const handleSubmitOrder = async (e) => {
         e.preventDefault();
         setSubmitting(true);
-        setError(null);
 
         try {
             const orderData = {
@@ -68,27 +50,21 @@ export default function CheckoutPage() {
             };
 
             const result = await createOrder(orderData);
-            if (import.meta.env.DEV) {
-                console.log('[API] POST /orders:', result);
-            }
             setOrderResult(result);
             notify('success', 'Order created successfully!');
 
             // Clear cart immediately for UI + backend consistency
             try {
                 await clearCart();
-                // Refresh cart badge (App.jsx uses SWR key: 'cart-count')
-                await mutate('cart-count');
+                // Refresh the header badge ('cart-count') and the shared cart cache
+                globalMutate('cart-count');
+                globalMutate('cart');
             } catch (clearErr) {
                 const message = toUserFriendlyError(clearErr?.message);
                 notify('error', `Order created, but failed to clear cart: ${message}`);
             }
         } catch (err) {
-            const message = toUserFriendlyError(err?.message);
-            notify('error', message);
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
-            }
+            notify('error', toUserFriendlyError(err?.message));
         } finally {
             setSubmitting(false);
         }
@@ -115,10 +91,7 @@ export default function CheckoutPage() {
                     <button onClick={() => navigate('/orders')} style={{ marginTop: '0.75rem' }}>
                         View Orders
                     </button>
-                    <details className="api-debug">
-                        <summary>API Response</summary>
-                        <pre>{JSON.stringify(orderResult, null, 2)}</pre>
-                    </details>
+                    <ApiDebug data={orderResult} />
                 </>
             )}
 
@@ -133,12 +106,12 @@ export default function CheckoutPage() {
             {/* Cart Load Error - Retry */}
             {!loading && !orderResult && error && (!cart?.items?.length) && (
                 <div className="error-box">
-                    <strong>Error:</strong> {error}
+                    <strong>Error:</strong> {toUserFriendlyError(error)}
                     <button
                         type="button"
                         className="primary"
                         style={{ marginTop: '0.75rem' }}
-                        onClick={fetchCart}
+                        onClick={() => mutate()}
                     >
                         Try Again
                     </button>

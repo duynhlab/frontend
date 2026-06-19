@@ -137,7 +137,7 @@ export default function OrdersPage() {
                                             <tr key={order.id}>
                                                 <td>#{order.id}</td>
                                                 <td>
-                                                    <span style={{ color: getStatusColor(order.status) }}>
+                                                    <span className="order-status" style={{ color: getStatusColor(order.status) }}>
                                                         {order.status}
                                                     </span>
                                                 </td>

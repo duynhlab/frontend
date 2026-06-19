@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSWRConfig } from 'swr';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
+import { useApiQuery } from '../../hooks/useApiQuery';
 import { useToast } from '../../components/common/ToastProvider';
 import { formatCurrency } from '../../utils/formatCurrency';
+import ApiDebug from '../../components/common/ApiDebug';
 
 /**
  * Cart Page - Full cart operations
@@ -13,82 +16,43 @@ import { formatCurrency } from '../../utils/formatCurrency';
 export default function CartPage() {
     const navigate = useNavigate();
     const { notify } = useToast();
-    const [cart, setCart] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { mutate: globalMutate } = useSWRConfig();
     const [actionLoading, setActionLoading] = useState(null);
 
     // Check authentication
     const isAuthenticated = !!localStorage.getItem('authToken');
 
-    const fetchCart = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const result = await getCart();
-            setCart(result);
-            if (import.meta.env.DEV) {
-                console.log('[API] GET /cart:', result);
-            }
-        } catch (err) {
-            setError(err.message);
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        // Only fetch cart if authenticated
-        if (!isAuthenticated) {
-            setLoading(false);
-            return;
-        }
-        fetchCart();
-    }, [isAuthenticated]);
-
-    const handleUpdateQuantity = async (itemId, newQuantity) => {
-        if (newQuantity < 1) return;
-        setActionLoading(itemId);
-        try {
-            const result = await updateCartItem(itemId, newQuantity);
-            if (import.meta.env.DEV) {
-                console.log('[API] PATCH /cart/items/' + itemId + ':', result);
-            }
-            notify('success', 'Updated!');
-            fetchCart();
-        } catch (err) {
-            notify('error', err.message);
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
-            }
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const handleRemoveItem = async (itemId) => {
-        setActionLoading(itemId);
-        try {
-            const result = await removeCartItem(itemId);
-            if (import.meta.env.DEV) {
-                console.log('[API] DELETE /cart/items/' + itemId + ':', result);
-            }
-            notify('success', 'Removed!');
-            fetchCart();
-        } catch (err) {
-            notify('error', err.message);
-            if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
-            }
-        } finally {
-            setActionLoading(null);
-        }
-    };
+    // Server state via SWR (shares the 'cart' key with Checkout)
+    const { data: cart, loading, error, mutate } = useApiQuery(
+        isAuthenticated ? 'cart' : null,
+        getCart
+    );
 
     const items = cart?.items || [];
+
+    // Run a cart write, then revalidate the cart and sync the header badge
+    const runCartAction = async (itemId, action, successMessage) => {
+        setActionLoading(itemId);
+        try {
+            await action();
+            await mutate();              // revalidate 'cart' in place (no full-page flash)
+            globalMutate('cart-count');  // keep the header cart badge in sync
+            notify('success', successMessage);
+        } catch (err) {
+            notify('error', err.message);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleUpdateQuantity = (itemId, newQuantity) => {
+        if (newQuantity < 1) return;
+        runCartAction(itemId, () => updateCartItem(itemId, newQuantity), 'Updated!');
+    };
+
+    const handleRemoveItem = (itemId) => {
+        runCartAction(itemId, () => removeCartItem(itemId), 'Removed!');
+    };
 
     // Gated state for unauthenticated users
     if (!isAuthenticated) {
@@ -181,11 +145,8 @@ export default function CartPage() {
                 </div>
             )}
 
-            {/* API Debug */}
-            <details className="api-debug">
-                <summary>API Response</summary>
-                <pre>{JSON.stringify(cart, null, 2)}</pre>
-            </details>
+            {/* API Debug (dev only) */}
+            <ApiDebug data={cart} />
         </div>
     );
 }
