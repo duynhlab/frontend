@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { getOrders, getOrderDetails } from '../../api/orderApi';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { getOrderDetails } from '../../api/orderApi';
 import { useAuth } from '../../hooks/useAuth';
-import { useApiQuery } from '../../hooks/useApiQuery';
+import { useOrders } from '../../hooks/useOrders';
 import { useToast } from '../../components/common/ToastProvider';
 import PageHeader from '../../components/common/PageHeader';
+import Pagination from '../../components/common/Pagination';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
@@ -26,18 +27,21 @@ export default function OrdersPage() {
     const [selectedOrderData, setSelectedOrderData] = useState(null);
     const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
 
-    // Auth guard effect
-    useEffect(() => {
-        // Don't redirect, just show login prompt
-    }, []);
+    // Page number from the URL (?page=N), 1-based
+    const [searchParams, setSearchParams] = useSearchParams();
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const PAGE_SIZE = 10;
 
-    // Fetch orders list using shared hook
-    const { data: orders, loading, error } = useApiQuery(
-        isAuthenticated ? 'orders' : null,
-        getOrders
-    );
+    // Fetch the current page of orders (paginated)
+    const { orders: ordersList, total, totalPages, loading, error } = useOrders({
+        page,
+        pageSize: PAGE_SIZE,
+        enabled: isAuthenticated,
+    });
 
-    const ordersList = useMemo(() => orders || [], [orders]);
+    const handlePageChange = (newPage) => {
+        setSearchParams({ page: String(newPage) });
+    };
 
     // Handle viewing order details (uses aggregation endpoint)
     const handleViewOrder = async (orderId) => {
@@ -94,7 +98,7 @@ export default function OrdersPage() {
                 title="My Orders" 
                 backLink="/" 
                 backText="← Back to Home"
-                apiLabel={`API: GET /api/v1/orders • ${ordersList.length} orders`}
+                apiLabel={`API: GET /api/v1/orders • ${total} orders • Page ${page} of ${totalPages || 1}`}
             />
 
             {/* Loading */}
@@ -153,6 +157,13 @@ export default function OrdersPage() {
                                     </tbody>
                                 </table>
                             </div>
+                        )}
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
                         )}
                     </div>
 

@@ -7,11 +7,12 @@ import apiClient from './client';
 
 /**
  * GET /order/v1/private/orders  →  /api/v1/orders
- * Paginated envelope: { items, page, page_size, total_items, total_pages }.
+ * Accepts `{ page, page_size }` params; returns the full paginated envelope
+ * { items, page, page_size, total_items, total_pages } (callers read `.items`).
  */
-export async function getOrders() {
-    const response = await apiClient.get('/order/v1/private/orders');
-    return response.data?.items ?? [];
+export async function getOrders(params = {}) {
+    const response = await apiClient.get('/order/v1/private/orders', { params });
+    return response.data;
 }
 
 /**
