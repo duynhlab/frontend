@@ -10,14 +10,20 @@
  */
 
 /**
- * Edge gateway origin. Each api module owns its `/{service}/v1/{audience}`
- * prefix — config.js only decides the host.
+ * API origin. Each api module owns its `/{service}/v1/{audience}` prefix —
+ * config.js only decides the host.
  *
- * VITE_API_BASE_URL overrides the default (useful for local dev pointing at
- * a port-forwarded gateway, or for a staging env).
+ * VITE_API_BASE_URL (baked at build time) selects the deployment topology:
+ *   - unset  → cloud default `https://gateway.duynh.me` (SPA on local.duynh.me
+ *              calls the cross-origin Kong gateway).
+ *   - set to "" → same-origin / relative: the SPA and API share one origin
+ *              behind a local reverse proxy (the RPM deploy, nginx as gateway).
+ *
+ * Note: `??` (not `||`) so an explicit empty string is honored as "relative" —
+ * `'' || x` would wrongly fall back to the cloud default.
  */
 export const getApiBaseUrl = () => {
-    return import.meta.env.VITE_API_BASE_URL || 'https://gateway.duynh.me';
+    return import.meta.env.VITE_API_BASE_URL ?? 'https://gateway.duynh.me';
 };
 
 /**
