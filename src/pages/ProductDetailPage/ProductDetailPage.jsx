@@ -7,6 +7,7 @@ import EmptyState from '../../components/common/EmptyState';
 import ApiError from '../../components/common/ApiError';
 import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
+import StarRating from '../../components/common/StarRating';
 import { useToast } from '../../components/common/ToastProvider';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
@@ -20,11 +21,15 @@ function formatReviewDate(review) {
     if (!dateValue) return '—';
     const date = new Date(dateValue);
     if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function getReviewAuthor(review) {
     return review.username || review.user_name || 'Guest';
+}
+
+function getInitial(name) {
+    return (name || 'G').trim().charAt(0).toUpperCase() || 'G';
 }
 
 /**
@@ -227,29 +232,33 @@ export default function ProductDetailPage() {
                         {reviews.length > 0 ? (
                             <>
                                 <div className="reviews-summary">
-                                    <span className="reviews-score">{averageRating}</span>
-                                    <span
-                                        className="reviews-stars"
-                                        role="img"
-                                        aria-label={`${averageRating} out of 5 stars`}
-                                    >{'⭐'.repeat(Math.round(averageRating))}</span>
-                                    <span className="text-muted">({reviews.length} reviews)</span>
+                                    <div className="reviews-score-block">
+                                        <span className="reviews-score">{averageRating}</span>
+                                        <span className="reviews-score-max">/5</span>
+                                    </div>
+                                    <div className="reviews-score-meta">
+                                        <StarRating value={Number(averageRating)} />
+                                        <span className="text-muted">
+                                            {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="reviews-list">
                                     {reviews.map(review => (
                                         <div key={review.id} className="review-item">
                                             <div className="review-header">
-                                                <span
-                                                    className="review-stars"
-                                                    role="img"
-                                                    aria-label={`${review.rating} out of 5 stars`}
-                                                >{'⭐'.repeat(review.rating)}</span>
-                                                <span className="text-muted">{formatReviewDate(review)}</span>
+                                                <span className="review-avatar" aria-hidden="true">
+                                                    {getInitial(getReviewAuthor(review))}
+                                                </span>
+                                                <div className="review-meta">
+                                                    <span className="review-author">{getReviewAuthor(review)}</span>
+                                                    <span className="review-date text-muted">{formatReviewDate(review)}</span>
+                                                </div>
+                                                <StarRating value={review.rating} />
                                             </div>
                                             {review.title && <h4>{review.title}</h4>}
-                                            <p>{review.comment}</p>
-                                            <p className="text-muted">By {getReviewAuthor(review)}</p>
+                                            <p className="review-comment">{review.comment}</p>
                                         </div>
                                     ))}
                                 </div>
