@@ -36,3 +36,6 @@ coverage/
 # Cache
 .cache/
 .eslintcache
+
+# Local debugging artifacts (screenshots, scratch)
+debugs-local/
