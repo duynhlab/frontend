@@ -1,0 +1,14 @@
+.star-rating {
+    display: inline-flex;
+    line-height: 1;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.star-rating .star-on {
+    color: var(--warning);
+}
+
+.star-rating .star-off {
+    color: #3a3a3a;
+}
