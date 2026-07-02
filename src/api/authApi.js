@@ -1,8 +1,8 @@
 import apiClient from './client';
 
 /**
- * Auth API — Variant A edge paths.
- * Edge paths (gateway pass-through): /auth/v1/public/{login,register}, /auth/v1/private/{me,logout}
+ * Auth API — Variant A edge paths (JWT-only, RFC-0009 Phase 5).
+ * Edge paths (gateway pass-through): /auth/v1/public/{login,register,refresh,logout}
  */
 
 /**
@@ -22,18 +22,15 @@ export async function register(username, email, password) {
 }
 
 /**
- * GET /auth/v1/private/me
- */
-export async function getMe() {
-    const response = await apiClient.get('/auth/v1/private/me');
-    return response.data;
-}
-
-/**
- * POST /auth/v1/private/logout — revokes the current session token server-side.
+ * POST /auth/v1/public/logout — revokes the refresh token's whole family
+ * server-side (the access token simply expires; JWTs are stateless).
  * Best-effort: callers should clear local auth state regardless of the result.
  */
-export async function logout() {
-    const response = await apiClient.post('/auth/v1/private/logout');
+export async function logout(refreshToken) {
+    const response = await apiClient.post(
+        '/auth/v1/public/logout',
+        { refresh_token: refreshToken },
+        { skipAuthRefresh: true }
+    );
     return response.data;
 }

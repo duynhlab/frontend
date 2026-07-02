@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, register } from '../../api/authApi';
 import { clearSession } from '../../auth/session';
+import { setTokens } from '../../auth/tokens';
 import { useToast } from '../../components/common/ToastProvider';
 
 /**
@@ -18,8 +19,11 @@ export default function LoginPage() {
     const [searchParams] = useSearchParams();
     const { notify } = useToast();
 
-    // Read query params
-    const returnTo = searchParams.get('returnTo') || '/';
+    // Read query params. returnTo is attacker-influenceable (query string), so
+    // allow only same-app absolute paths — reject "//host", "/\host" and
+    // scheme-bearing values to prevent a post-login open redirect.
+    const rawReturnTo = searchParams.get('returnTo') || '/';
+    const returnTo = /^\/(?![/\\])/.test(rawReturnTo) ? rawReturnTo : '/';
     const initialMode = searchParams.get('mode') || 'login';
 
     const [mode, setMode] = useState(initialMode);
@@ -56,30 +60,24 @@ export default function LoginPage() {
 
         try {
             let result;
+            // DEV logs redact the token pair — the refresh token is a durable
+            // credential and must not land in console buffers / screenshots.
             if (mode === 'login') {
                 result = await login(form.username, form.password);
                 if (import.meta.env.DEV) {
-                    console.log('[API] POST /auth/login:', result);
+                    console.log('[API] POST /auth/login:', { ...result, access_token: '[redacted]', refresh_token: '[redacted]' });
                 }
             } else {
                 result = await register(form.username, form.email, form.password);
                 if (import.meta.env.DEV) {
-                    console.log('[API] POST /auth/register:', result);
+                    console.log('[API] POST /auth/register:', { ...result, access_token: '[redacted]', refresh_token: '[redacted]' });
                 }
             }
 
-            if (result.token) {
-                localStorage.setItem('authToken', result.token);
-                // Dispatch custom event for same-tab updates
-                window.dispatchEvent(new Event('auth-change'));
-                // Dispatch storage event for cross-tab updates
-                window.dispatchEvent(new Event('storage'));
-            }
-
-            // Persist user info for review submissions etc.
-            if (result.user) {
-                localStorage.setItem('authUser', JSON.stringify(result.user));
-            }
+            // Persist the JWT access token + rotating refresh token (and the
+            // user info for review submissions etc.); notifies this tab and
+            // other tabs. JWT-only — RFC-0009 Phase 5 removed the opaque token.
+            setTokens(result);
 
             notify('success', `${mode === 'login' ? 'Login' : 'Registration'} successful!`);
             // Redirect to returnTo URL (or home)
@@ -87,7 +85,9 @@ export default function LoginPage() {
         } catch (err) {
             notify('error', err.message || 'Authentication failed');
             if (import.meta.env.DEV) {
-                console.error('[API ERROR]', err);
+                // Log only diagnostics — the raw axios error carries the request
+                // body (err.config.data) which contains the plaintext password.
+                console.error('[API ERROR]', err.response?.status, err.message);
             }
         } finally {
             setLoading(false);
