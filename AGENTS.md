@@ -52,11 +52,11 @@ frontend/
 │   ├── api/            # Axios client + one module per backend service
 │   │   ├── client.js   #   shared axios instance, interceptors (auth, 401)
 │   │   ├── config.js   #   gateway origin from VITE_API_BASE_URL
-│   │   ├── authApi.js  #   login/register/me/logout
+│   │   ├── authApi.js  #   login/register/refresh/logout
 │   │   ├── cartApi.js  productApi.js  orderApi.js  reviewApi.js
 │   │   ├── userApi.js  notificationApi.js  shippingApi.js
 │   │   └── mockData.js #   mock fixtures (VITE_USE_MOCK=true)
-│   ├── auth/           # session.js — logout / token clearing
+│   ├── auth/           # tokens.js (access+refresh pair store), session.js (logout: revoke family + clear)
 │   ├── components/
 │   │   ├── common/     #   reusable UI (toasts, skeletons, pagination, errors)
 │   │   ├── domain/     #   product cards, grid, filter, quantity selector
@@ -114,11 +114,16 @@ Base URL:
 
 Auth:
 
-- Token lives in `localStorage.authToken`; `client.js` attaches
-  `Authorization: Bearer <token>` to every request.
-- On `401` the client clears the token and redirects to `/login`, unless the call sets
-  `skipAuthRefresh: true` (used by cart-count and notification-count pollers so a transient
-  401 does not log the user out).
+- The RS256 access token lives in `localStorage.authToken` and the rotating
+  refresh token in `localStorage.authRefreshToken` (`src/auth/tokens.js`);
+  `client.js` attaches `Authorization: Bearer <access token>` to every request.
+- On `401` the client does one **silent refresh** (single-flight in-tab; Web Locks
+  serialise tabs) via `POST /auth/v1/public/refresh` and retries the request once.
+  If refresh fails or no refresh token exists it clears the session and redirects
+  to `/login` — unless the call sets `skipAuthRefresh: true` (cart/notification
+  badge pollers), which **still refreshes** but skips the redirect.
+- Logout: `POST /auth/v1/public/logout {refresh_token}` revokes the token family
+  server-side, then local state is cleared regardless of the result.
 - Demo login (seeded `auth-db`): username `alice`, password `password123` — log in by
   **username**, not email.
 
