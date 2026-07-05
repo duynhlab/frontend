@@ -34,6 +34,16 @@ export async function markAsRead(id) {
 }
 
 /**
+ * PATCH /notification/v1/private/notifications/read-all
+ * Marks every unread notification for the user as read in one request.
+ * Returns { updated: <count> }.
+ */
+export async function markAllAsRead() {
+    const response = await apiClient.patch('/notification/v1/private/notifications/read-all');
+    return response.data;
+}
+
+/**
  * GET /notification/v1/private/notifications/count
  * Called by the bell-badge on a short poll; pass `skipAuthRefresh` so that
  * a 401 here does not yank the user to /login.

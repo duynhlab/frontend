@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getNotifications, markAsRead } from '../../api/notificationApi';
+import { useSWRConfig } from 'swr';
+import { getNotifications, markAsRead, markAllAsRead } from '../../api/notificationApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useToast } from '../../components/common/ToastProvider';
@@ -35,23 +36,28 @@ export default function NotificationPage() {
     );
 
     const { notify } = useToast();
+    // Cross-revalidate the header bell badge (a separate SWR key) so it updates
+    // instantly after a mark, instead of waiting for its background poll.
+    const { mutate: globalMutate } = useSWRConfig();
+    const [markingAll, setMarkingAll] = useState(false);
 
-    // Serialize every mark-as-read through one promise chain: rapid clicks (or
-    // "Mark all") must never fire concurrent PATCHes, because that burst is what
-    // trips the gateway rate limit (429). The chain base never rejects, so one
-    // failed link can't stall the rest. `pending` counts in-flight marks to drive
-    // the disabled/label states; `inFlight` dedupes repeated clicks on one id.
+    // Serialize single mark-as-read clicks through one promise chain: rapid
+    // individual clicks must never fire concurrent PATCHes, because that burst is
+    // what trips the gateway rate limit (429). (Bulk "mark all" uses the
+    // dedicated endpoint instead.) The chain base never rejects, so one failed
+    // link can't stall the rest. `pending` counts in-flight marks to drive the
+    // disabled/label states; `inFlight` dedupes repeated clicks on one id.
     const queueRef = useRef(Promise.resolve());
     const inFlight = useRef(new Set());
     const [pending, setPending] = useState(0);
 
     const enqueueMark = useCallback((id) => {
         const run = queueRef.current.then(() => markAsRead(id));
-        // Serialize AND pace: even one-at-a-time PATCHes return in a few ms, so
-        // 6 of them would still exceed the gateway's 5 req/s limit. Hold ~220ms
-        // after each settles (success or fail) before the next link runs, which
-        // keeps a full "mark all" comfortably under the limit. The caller still
-        // awaits `run` (the PATCH itself), so the UI reacts immediately.
+        // Serialize AND pace: even one-at-a-time PATCHes return in a few ms, so a
+        // fast run of individual clicks would still exceed the gateway's 5 req/s
+        // limit. Hold ~220ms after each settles (success or fail) before the next
+        // link runs. The caller still awaits `run` (the PATCH itself), so the UI
+        // reacts immediately.
         const gap = () => new Promise(r => setTimeout(r, 220));
         queueRef.current = run.then(gap, gap);
         return run;
@@ -74,6 +80,7 @@ export default function NotificationPage() {
         mutate(notifications?.map(n => n.id === id ? { ...n, read: true } : n), false);
         try {
             await markOne(id);
+            globalMutate('notification-count', prev => ({ count: Math.max(0, (prev?.count ?? 1) - 1) }), { revalidate: true });
         } catch (err) {
             if (err?.isRateLimit) notify('warning', err.message);
             else notify('error', err?.message || 'Failed to mark as read');
@@ -85,24 +92,22 @@ export default function NotificationPage() {
     const handleMarkAll = async () => {
         const ids = (notifications || []).filter(n => !n.read).map(n => n.id);
         if (ids.length === 0) return;
-        // Optimistic: clear all unread at once.
+        setMarkingAll(true);
+        // Optimistically clear the list now; one bulk request replaces the old
+        // per-id loop (no rate-limit pacing needed). The badge is zeroed on the
+        // response below, then reconciled.
         mutate(notifications?.map(n => ({ ...n, read: true })), false);
-        let failed = false;
-        let rateLimited = false;
-        for (const id of ids) {
-            try {
-                await markOne(id);
-            } catch (err) {
-                failed = true;
-                // A rate limit means the rest would fail too — stop and let the
-                // user retry the remainder in a moment.
-                if (err?.isRateLimit) { rateLimited = true; notify('warning', err.message); break; }
-            }
+        try {
+            const res = await markAllAsRead();
+            globalMutate('notification-count', { count: 0 }, { revalidate: true });
+            notify('success', `Marked ${res?.updated ?? ids.length} as read`);
+        } catch (err) {
+            if (err?.isRateLimit) notify('warning', err.message);
+            else notify('error', 'Some notifications could not be marked as read');
+        } finally {
+            setMarkingAll(false);
+            mutate(); // revalidate list (reverts optimistic on failure)
         }
-        if (rateLimited) { /* warning already shown */ }
-        else if (failed) notify('error', 'Some notifications could not be marked as read');
-        else notify('success', `Marked ${ids.length} as read`);
-        mutate(); // revalidate; reverts any rows that didn't get marked
     };
 
     // Computed values
@@ -191,9 +196,9 @@ export default function NotificationPage() {
                                 <button
                                     className="mark-all-btn"
                                     onClick={handleMarkAll}
-                                    disabled={pending > 0}
+                                    disabled={pending > 0 || markingAll}
                                 >
-                                    {pending > 0 ? 'Marking...' : 'Mark all as read'}
+                                    {markingAll ? 'Marking...' : 'Mark all as read'}
                                 </button>
                             </div>
                             {unreadNotifications.map(notification => (
@@ -219,7 +224,7 @@ export default function NotificationPage() {
                                             <button
                                                 className="primary"
                                                 onClick={() => handleMarkAsRead(notification.id)}
-                                                disabled={pending > 0}
+                                                disabled={pending > 0 || markingAll}
                                             >
                                                 {pending > 0 ? 'Marking...' : 'Mark as Read'}
                                             </button>

@@ -35,8 +35,12 @@ export default function CartPage() {
         setActionLoading(itemId);
         try {
             await action();
-            await mutate();              // revalidate 'cart' in place (no full-page flash)
-            globalMutate('cart-count');  // keep the header cart badge in sync
+            const updated = await mutate();  // revalidate 'cart' in place (no full-page flash)
+            // Set the header badge from the fresh list (same SUM(quantity) the
+            // backend /count uses) so it updates instantly, then revalidate to
+            // reconcile.
+            const count = (updated?.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0);
+            globalMutate('cart-count', { count }, { revalidate: true });
             notify('success', successMessage);
         } catch (err) {
             notify('error', err.message);
