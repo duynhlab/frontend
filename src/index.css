@@ -829,6 +829,51 @@ th {
   margin: 0.25rem 0;
 }
 
+/* Payment box — same visual family as the shipment box (status text carries
+   the semantic color, so the frame stays neutral like its sibling) */
+.payment-box {
+  background: var(--bg-hover);
+  border: 1px solid var(--accent);
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.75rem;
+}
+
+.payment-box p {
+  margin: 0.25rem 0;
+}
+
+/* Checkout payment-method picker */
+.payment-method {
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.payment-method legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.payment-method-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.payment-method-option code {
+  font-size: 0.75rem;
+}
+
+.payment-method-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+}
+
 /* Text utilities */
 .text-muted {
   color: var(--text-muted);
@@ -950,8 +995,9 @@ th {
     font-size: 1.25rem;
   }
 
-  /* Shipment box */
-  .shipment-box {
+  /* Shipment / payment boxes */
+  .shipment-box,
+  .payment-box {
     font-size: 0.8125rem;
   }
 
