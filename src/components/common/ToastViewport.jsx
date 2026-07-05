@@ -19,6 +19,7 @@ export default function ToastViewport({ toasts, onDismiss }) {
                     <div className="toast-icon">
                         {toast.type === 'success' && '✓'}
                         {toast.type === 'error' && '✕'}
+                        {toast.type === 'warning' && '⚠'}
                         {toast.type === 'info' && 'ℹ'}
                     </div>
                     <div className="toast-message">{toast.message}</div>

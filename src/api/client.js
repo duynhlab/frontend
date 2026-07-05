@@ -140,6 +140,20 @@ apiClient.interceptors.response.use(
                 redirectToLogin();
             }
 
+            // Rate limited by the gateway (Kong). Not a real failure — the user
+            // is just going too fast (e.g. clicking several actions in a burst).
+            // Flag it so callers can show a calm "slow down" hint instead of a
+            // red error, and surface Retry-After when the gateway sends it. No
+            // auto-retry here: retrying immediately only feeds the limiter.
+            if (response.status === 429) {
+                error.isRateLimit = true;
+                const retryAfter = Number(response.headers?.['retry-after']);
+                error.message = retryAfter > 0
+                    ? `You're doing that too fast — please wait ${retryAfter}s and try again.`
+                    : "You're doing that too fast — please wait a moment and try again.";
+                return Promise.reject(error);
+            }
+
             // Extract error message from response
             const message = error.response.data?.error || 'An error occurred';
             error.message = message;

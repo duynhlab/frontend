@@ -52,9 +52,16 @@ export function useApiMutation(mutationFn, options = {}) {
         } catch (err) {
             const message = err?.message || errorMessage || 'An error occurred';
             setError(message);
-            
+
             if (enableToast) {
-                notify('error', errorMessage || message);
+                // Rate-limit is a "slow down" hint, not a failure: show the
+                // gateway's calm message as a warning rather than the generic
+                // red error copy the caller supplied.
+                if (err?.isRateLimit) {
+                    notify('warning', message);
+                } else {
+                    notify('error', errorMessage || message);
+                }
             }
             
             if (onError) {
