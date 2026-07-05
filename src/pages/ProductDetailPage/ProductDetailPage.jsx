@@ -152,7 +152,8 @@ export default function ProductDetailPage() {
             }
             notify('success', `Added ${quantity} item${quantity > 1 ? 's' : ''} to cart`);
             setQuantity(1);
-            globalMutate('cart-count'); // sync the header cart badge
+            // Bump the header badge instantly by the amount added, then reconcile.
+            globalMutate('cart-count', prev => ({ count: (prev?.count ?? 0) + quantity }), { revalidate: true });
         } catch (err) {
             notify('error', err.message || 'Failed to add to cart');
             if (import.meta.env.DEV) {

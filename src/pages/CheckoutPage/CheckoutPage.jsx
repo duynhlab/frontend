@@ -65,8 +65,9 @@ export default function CheckoutPage() {
             // Clear cart immediately for UI + backend consistency
             try {
                 await clearCart();
-                // Refresh the header badge ('cart-count') and the shared cart cache
-                globalMutate('cart-count');
+                // Zero the header badge instantly (cart is now empty), then
+                // reconcile; also refresh the shared cart cache.
+                globalMutate('cart-count', { count: 0 }, { revalidate: true });
                 globalMutate('cart');
             } catch (clearErr) {
                 const message = toUserFriendlyError(clearErr?.message);
