@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getNotifications, markAsRead } from '../../api/notificationApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useApiQuery } from '../../hooks/useApiQuery';
-import { useApiMutation } from '../../hooks/useApiMutation';
+import { useToast } from '../../components/common/ToastProvider';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingState from '../../components/common/LoadingState';
 import ApiError from '../../components/common/ApiError';
@@ -34,27 +34,75 @@ export default function NotificationPage() {
         getNotifications
     );
 
-    // Mark as read mutation with optimistic update
-    const { mutate: markRead, loading: markingRead } = useApiMutation(markAsRead, {
-        successMessage: 'Marked as read',
-        errorMessage: 'Failed to mark as read',
-    });
+    const { notify } = useToast();
+
+    // Serialize every mark-as-read through one promise chain: rapid clicks (or
+    // "Mark all") must never fire concurrent PATCHes, because that burst is what
+    // trips the gateway rate limit (429). The chain base never rejects, so one
+    // failed link can't stall the rest. `pending` counts in-flight marks to drive
+    // the disabled/label states; `inFlight` dedupes repeated clicks on one id.
+    const queueRef = useRef(Promise.resolve());
+    const inFlight = useRef(new Set());
+    const [pending, setPending] = useState(0);
+
+    const enqueueMark = useCallback((id) => {
+        const run = queueRef.current.then(() => markAsRead(id));
+        // Serialize AND pace: even one-at-a-time PATCHes return in a few ms, so
+        // 6 of them would still exceed the gateway's 5 req/s limit. Hold ~220ms
+        // after each settles (success or fail) before the next link runs, which
+        // keeps a full "mark all" comfortably under the limit. The caller still
+        // awaits `run` (the PATCH itself), so the UI reacts immediately.
+        const gap = () => new Promise(r => setTimeout(r, 220));
+        queueRef.current = run.then(gap, gap);
+        return run;
+    }, []);
+
+    const markOne = useCallback(async (id) => {
+        if (inFlight.current.has(id)) return;
+        inFlight.current.add(id);
+        setPending(n => n + 1);
+        try {
+            await enqueueMark(id);
+        } finally {
+            inFlight.current.delete(id);
+            setPending(n => n - 1);
+        }
+    }, [enqueueMark]);
 
     const handleMarkAsRead = async (id) => {
-        // Optimistic update
-        mutate(
-            notifications?.map(n => n.id === id ? { ...n, read: true } : n),
-            false // Don't revalidate yet
-        );
-        
-        const result = await markRead(id);
-        if (result) {
-            // Revalidate on success
-            mutate();
-        } else {
-            // Revert on failure
+        // Optimistic update; revalidate (or revert) once the PATCH settles.
+        mutate(notifications?.map(n => n.id === id ? { ...n, read: true } : n), false);
+        try {
+            await markOne(id);
+        } catch (err) {
+            if (err?.isRateLimit) notify('warning', err.message);
+            else notify('error', err?.message || 'Failed to mark as read');
+        } finally {
             mutate();
         }
+    };
+
+    const handleMarkAll = async () => {
+        const ids = (notifications || []).filter(n => !n.read).map(n => n.id);
+        if (ids.length === 0) return;
+        // Optimistic: clear all unread at once.
+        mutate(notifications?.map(n => ({ ...n, read: true })), false);
+        let failed = false;
+        let rateLimited = false;
+        for (const id of ids) {
+            try {
+                await markOne(id);
+            } catch (err) {
+                failed = true;
+                // A rate limit means the rest would fail too — stop and let the
+                // user retry the remainder in a moment.
+                if (err?.isRateLimit) { rateLimited = true; notify('warning', err.message); break; }
+            }
+        }
+        if (rateLimited) { /* warning already shown */ }
+        else if (failed) notify('error', 'Some notifications could not be marked as read');
+        else notify('success', `Marked ${ids.length} as read`);
+        mutate(); // revalidate; reverts any rows that didn't get marked
     };
 
     // Computed values
@@ -138,7 +186,16 @@ export default function NotificationPage() {
                     {/* Unread Notifications */}
                     {unreadNotifications.length > 0 && (
                         <div className="notification-section unread">
-                            <h3>Unread</h3>
+                            <div className="notification-section-head">
+                                <h3>Unread</h3>
+                                <button
+                                    className="mark-all-btn"
+                                    onClick={handleMarkAll}
+                                    disabled={pending > 0}
+                                >
+                                    {pending > 0 ? 'Marking...' : 'Mark all as read'}
+                                </button>
+                            </div>
                             {unreadNotifications.map(notification => (
                                 <div key={notification.id} className="notification-item unread">
                                     <div className="notification-content">
@@ -162,9 +219,9 @@ export default function NotificationPage() {
                                             <button
                                                 className="primary"
                                                 onClick={() => handleMarkAsRead(notification.id)}
-                                                disabled={markingRead}
+                                                disabled={pending > 0}
                                             >
-                                                {markingRead ? 'Marking...' : 'Mark as Read'}
+                                                {pending > 0 ? 'Marking...' : 'Mark as Read'}
                                             </button>
                                         </div>
                                     </div>

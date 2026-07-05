@@ -56,6 +56,14 @@
     color: var(--error);
 }
 
+.toast-warning {
+    border-left: 3px solid var(--warning);
+}
+
+.toast-warning .toast-icon {
+    color: var(--warning);
+}
+
 .toast-info {
     border-left: 3px solid var(--accent);
 }
