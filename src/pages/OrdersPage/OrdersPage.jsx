@@ -74,6 +74,13 @@ export default function OrdersPage() {
             shipped: 'var(--accent)',
             delivered: 'var(--success)',
             in_transit: 'var(--info)',
+            // payment states (order-details enrichment)
+            authorized: 'var(--info)',
+            captured: 'var(--success)',
+            failed: 'var(--error)',
+            voided: 'var(--text-muted)',
+            refunded: 'var(--accent)',
+            partially_refunded: 'var(--warning)',
         };
         return colors[status] || 'var(--text-muted)';
     };
@@ -179,6 +186,7 @@ export default function OrdersPage() {
                             <OrderDetailsPanel 
                                 order={selectedOrderData.order} 
                                 shipment={selectedOrderData.shipment}
+                                payment={selectedOrderData.payment}
                                 getStatusColor={getStatusColor}
                             />
                         ) : !orderDetailsLoading && (
@@ -195,7 +203,7 @@ export default function OrdersPage() {
 }
 
 // Separate component for order details panel - layout consistent with Checkout
-function OrderDetailsPanel({ order, shipment, getStatusColor }) {
+function OrderDetailsPanel({ order, shipment, payment, getStatusColor }) {
     if (!order) return null;
 
     return (
@@ -260,6 +268,26 @@ function OrderDetailsPanel({ order, shipment, getStatusColor }) {
                     </table>
                 </div>
             </div>
+
+            {/* Payment - from aggregation endpoint (present when payments are enabled) */}
+            {payment && (
+                <div className="payment-box">
+                    <strong>Payment</strong>
+                    <p>
+                        Status:{' '}
+                        <span style={{ color: getStatusColor(payment.status) }}>
+                            {payment.status?.replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                    </p>
+                    <p>Amount: {formatCurrency(payment.amount)}</p>
+                    {payment.refunded > 0 && (
+                        <p>Refunded: {formatCurrency(payment.refunded)}</p>
+                    )}
+                    {payment.decline_code && (
+                        <p className="text-muted">Decline reason: {payment.decline_code.replace(/_/g, ' ')}</p>
+                    )}
+                </div>
+            )}
 
             {/* Shipping Tracking - from aggregation endpoint */}
             {shipment && (

@@ -9,6 +9,13 @@ import { toUserFriendlyError } from '../../utils/errorMessages';
 import { formatCurrency } from '../../utils/formatCurrency';
 import ApiDebug from '../../components/common/ApiDebug';
 
+// Test payment tokens (Stripe-style opaque references). Which card "brand" is
+// cosmetic in the mock — approval/decline is driven by the amount.
+const PAYMENT_METHODS = [
+    { token: 'tok_visa', label: 'Visa test card' },
+    { token: 'tok_mastercard', label: 'Mastercard test card' },
+];
+
 /**
  * Checkout Page - Create order
  * POST /order/v1/private/orders
@@ -20,6 +27,7 @@ export default function CheckoutPage() {
     const { mutate: globalMutate } = useSWRConfig();
     const [submitting, setSubmitting] = useState(false);
     const [orderResult, setOrderResult] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].token);
 
     const isAuthenticated = !!localStorage.getItem('authToken');
 
@@ -46,7 +54,8 @@ export default function CheckoutPage() {
                     product_name: item.product_name,
                     quantity: item.quantity,
                     price: item.product_price
-                }))
+                })),
+                payment_method: paymentMethod
             };
 
             const result = await createOrder(orderData);
@@ -159,6 +168,30 @@ export default function CheckoutPage() {
                                     <tr><th><strong>Total</strong></th><td><strong>{formatCurrency(cart.total)}</strong></td></tr>
                                 </tbody>
                             </table>
+
+                            {/* Mock payment method — a test-token picker. The token is an
+                                opaque reference (never card data); the payment outcome is
+                                decided by mockpay's amount triggers, not the token. */}
+                            <fieldset className="payment-method">
+                                <legend>Payment method</legend>
+                                {PAYMENT_METHODS.map(method => (
+                                    <label key={method.token} className="payment-method-option">
+                                        <input
+                                            type="radio"
+                                            name="payment-method"
+                                            value={method.token}
+                                            checked={paymentMethod === method.token}
+                                            onChange={() => setPaymentMethod(method.token)}
+                                        />
+                                        <span>{method.label}</span>
+                                        <code className="text-muted">{method.token}</code>
+                                    </label>
+                                ))}
+                                <p className="text-muted payment-method-hint">
+                                    Test tokens only — the mock provider approves or declines by
+                                    the order amount, not the token.
+                                </p>
+                            </fieldset>
 
                             <button
                                 className="primary"
