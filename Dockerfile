@@ -34,7 +34,7 @@ FROM nginx:alpine
 # (this is the image Trivy scans). A full upgrade is more durable than a fixed
 # package list — e.g. libcrypto3/libssl3 (CVE-2026-45447) and libxml2
 # (CVE-2026-6732) all ship fixes in the Alpine index.
-RUN apk upgrade --no-cache
+RUN apk -U --no-cache upgrade
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
