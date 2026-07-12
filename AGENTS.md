@@ -118,11 +118,11 @@ Auth:
   refresh token in `localStorage.authRefreshToken` (`src/auth/tokens.js`);
   `client.js` attaches `Authorization: Bearer <access token>` to every request.
 - On `401` the client does one **silent refresh** (single-flight in-tab; Web Locks
-  serialise tabs) via `POST /auth/v1/public/refresh` and retries the request once.
+  serialise tabs) via `POST /auth/v1/public/auth/refresh` and retries the request once.
   If refresh fails or no refresh token exists it clears the session and redirects
   to `/login` — unless the call sets `skipAuthRefresh: true` (cart/notification
   badge pollers), which **still refreshes** but skips the redirect.
-- Logout: `POST /auth/v1/public/logout {refresh_token}` revokes the token family
+- Logout: `POST /auth/v1/public/auth/logout {refresh_token}` revokes the token family
   server-side, then local state is cleared regardless of the result.
 - Demo login (seeded `auth-db`): username `alice`, password `password123` — log in by
   **username**, not email.

@@ -35,7 +35,7 @@ apiClient.interceptors.request.use(
  * Silent refresh.
  *
  * The access token is a short-lived JWT; when a request 401s we rotate the
- * refresh token via POST /auth/v1/public/refresh, store the new pair, and retry
+ * refresh token via POST /auth/v1/public/auth/refresh, store the new pair, and retry
  * the original request once. Concurrency is guarded at two levels, because the
  * server's reuse-detection revokes the WHOLE token family if the same refresh
  * token is presented twice:
@@ -64,7 +64,7 @@ async function doRefresh(staleAccessToken) {
         throw new Error('no refresh token');
     }
     const { data } = await axios.post(
-        `${getApiBaseUrl()}/auth/v1/public/refresh`,
+        `${getApiBaseUrl()}/auth/v1/public/auth/refresh`,
         { refresh_token: refreshToken },
         { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
     );
@@ -136,7 +136,7 @@ apiClient.interceptors.response.use(
             } else if (response.status === 401 && !config.skipAuthRefresh && !isAuthPublic) {
                 // No refresh possible (no token / retry exhausted): log out.
                 // isAuthPublic is excluded so a wrong password on login (401
-                // from /auth/v1/public/login) doesn't clear state or redirect.
+                // from /auth/v1/public/auth/login) doesn't clear state or redirect.
                 redirectToLogin();
             }
 

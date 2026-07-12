@@ -7,8 +7,8 @@ import { useToast } from '../../components/common/ToastProvider';
 
 /**
  * Login Page - Auth APIs
- * POST /auth/v1/public/login
- * POST /auth/v1/public/register
+ * POST /auth/v1/public/auth/login
+ * POST /auth/v1/public/auth/register
  * 
  * Supports query params:
  * - returnTo: URL to redirect after successful auth (e.g. /products/1#reviews)
@@ -127,7 +127,7 @@ export default function LoginPage() {
                 <Link to="/" className="back-link">← Back</Link>
                 <h2>{mode === 'login' ? 'Login' : 'Register'}</h2>
                 <p className="api-label">
-                    API: POST /auth/v1/public/{mode === 'login' ? 'login' : 'register'}
+                    API: POST /auth/v1/public/auth/{mode === 'login' ? 'login' : 'register'}
                 </p>
 
                 <form onSubmit={handleSubmit}>
