@@ -14,6 +14,7 @@ const ProductListPage = lazy(() => import('./pages/ProductListPage/ProductListPa
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage/ProductDetailPage'));
 const CartPage = lazy(() => import('./pages/CartPage/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage/CheckoutPage'));
+const CheckoutFlowPage = lazy(() => import('./pages/CheckoutPage/CheckoutFlowPage'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage/OrdersPage'));
 const NotificationPage = lazy(() => import('./pages/NotificationPage/NotificationPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage/ProfilePage'));
@@ -125,7 +126,8 @@ function App() {
                         <Route path="/products" element={<ProductListPage />} />
                         <Route path="/products/:id" element={<ProductDetailPage />} />
                         <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
-                        <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                        <Route path="/checkout" element={<ProtectedRoute><CheckoutFlowPage /></ProtectedRoute>} />
+                        <Route path="/checkout/legacy" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                         <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
                         <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
                         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
