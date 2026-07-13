@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import {
-    createSession, setAddress, setShipping, setPayment,
+    createSession, setAddress, setShipping, setPayment, applyPromo, removePromo,
     confirmSession, cancelSession, idempotencyKeyFor, clearIdempotencyKey,
 } from '../../api/checkoutApi';
 import { useToast } from '../../components/common/ToastProvider';
@@ -48,6 +48,7 @@ export default function CheckoutFlowPage() {
     const [shippingMethod, setShippingMethod] = useState(SHIPPING_METHODS[0].key);
     const [editingAddress, setEditingAddress] = useState(false);
     const [paymentToken, setPaymentToken] = useState(PAYMENT_METHODS[0].token);
+    const [promoCode, setPromoCode] = useState('');
 
     const isAuthenticated = !!localStorage.getItem('authToken');
 
@@ -108,6 +109,17 @@ export default function CheckoutFlowPage() {
         } finally {
             setBusy(false);
         }
+    };
+
+    const submitPromo = async (e) => {
+        e.preventDefault();
+        if (!promoCode.trim()) return;
+        const s = await run(() => applyPromo(session.id, promoCode.trim().toUpperCase()))();
+        if (s) notify('success', 'Promo applied — totals updated.');
+    };
+    const submitRemovePromo = async () => {
+        const s = await run(() => removePromo(session.id))();
+        if (s) setPromoCode('');
     };
 
     const submitAddress = async () => {
@@ -321,12 +333,32 @@ export default function CheckoutFlowPage() {
                                             </tr>
                                         ))}
                                         <tr><th>Subtotal</th><td>{formatCurrency(session.subtotal)}</td></tr>
+                                        {session.discount > 0 && (
+                                            <tr><th>Discount ({session.promo_code})</th><td>−{formatCurrency(session.discount)}</td></tr>
+                                        )}
                                         <tr><th>Shipping</th><td>{formatCurrency(session.shipping_fee)}</td></tr>
                                         <tr><th>Tax</th><td>{formatCurrency(session.tax)}</td></tr>
                                         <tr><th><strong>Total</strong></th><td><strong>{formatCurrency(session.total)}</strong></td></tr>
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Promo: a validated preview — the use is only counted at confirm */}
+                            {session.promo_code ? (
+                                <p className="text-muted">
+                                    Code <strong>{session.promo_code}</strong> applied{' '}
+                                    <button type="button" onClick={submitRemovePromo} disabled={busy}>Remove</button>
+                                </p>
+                            ) : (
+                                <form onSubmit={submitPromo} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    <input
+                                        placeholder="Promo code"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value)}
+                                        aria-label="Promo code"
+                                    />
+                                    <button type="submit" disabled={busy || !promoCode.trim()}>Apply</button>
+                                </form>
+                            )}
                             <button type="button" onClick={handleCancel} disabled={busy} style={{ marginTop: '0.75rem' }}>
                                 Cancel checkout
                             </button>
