@@ -1,7 +1,7 @@
 # ===================================
 # Stage 1: Build Frontend with Node 24
 # ===================================
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 
 # Build argument for API base URL (optional - defaults to relative URLs for Nginx proxy)
