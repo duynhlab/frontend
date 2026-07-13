@@ -78,6 +78,23 @@ export async function confirmSession(id, idempotencyKey) {
 }
 
 /**
+ * POST /checkout/v1/private/checkout/sessions/:id/promo
+ * Attaches a code (validated preview — a use is only counted at confirm).
+ */
+export async function applyPromo(id, code) {
+    const response = await apiClient.post(`/checkout/v1/private/checkout/sessions/${id}/promo`, { code });
+    return response.data;
+}
+
+/**
+ * DELETE /checkout/v1/private/checkout/sessions/:id/promo
+ */
+export async function removePromo(id) {
+    const response = await apiClient.delete(`/checkout/v1/private/checkout/sessions/${id}/promo`);
+    return response.data;
+}
+
+/**
  * DELETE /checkout/v1/private/checkout/sessions/:id
  */
 export async function cancelSession(id) {
