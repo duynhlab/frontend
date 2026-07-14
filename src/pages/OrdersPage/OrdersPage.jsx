@@ -21,7 +21,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 export default function OrdersPage() {
     const navigate = useNavigate();
     const { notify } = useToast();
-    const { isAuthenticated, requireAuth } = useAuth();
+    const { isAuthenticated, _requireAuth } = useAuth();
 
     // Selected order state (for details panel)
     const [selectedOrderId, setSelectedOrderId] = useState(null);

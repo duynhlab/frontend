@@ -1,14 +1,11 @@
 # ===================================
 # Stage 1: Build Frontend with Node 24
 # ===================================
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 
-# Build argument for API base URL. Leave it UNSET for the cloud topology
-# (config.js then defaults to https://gateway.duynh.me); pass a value to
-# override — including an explicit "" for the same-origin/reverse-proxy
-# deploy (config.js honors "" via ?? — see src/api/config.js).
-ARG API_BASE_URL
+# Build argument for API base URL (optional - defaults to relative URLs for Nginx proxy)
+ARG API_BASE_URL=""
 
 # Set working directory
 WORKDIR /app
@@ -22,12 +19,9 @@ RUN npm ci --only=production=false
 # Copy source code
 COPY . .
 
-# Bake VITE_API_BASE_URL only when the build-arg was provided: a blanket
-# ENV turned "no arg" into an explicit empty string, which config.js reads
-# as the same-origin topology — so every CI image sent the cluster SPA's
-# API calls to its own nginx origin (405 at login).
-RUN if [ -n "${API_BASE_URL+x}" ]; then export VITE_API_BASE_URL="$API_BASE_URL"; fi \
-    && npm run build
+# Build with API_BASE_URL (empty for relative URLs)
+ENV VITE_API_BASE_URL=$API_BASE_URL
+RUN npm run build
 
 # Verify dist folder was created
 RUN ls -la /app/dist

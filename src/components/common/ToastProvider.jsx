@@ -19,10 +19,11 @@ const ToastContext = createContext(null);
 // Toast reducer for managing the queue
 function toastReducer(state, action) {
     switch (action.type) {
-        case 'ADD':
+        case 'ADD': {
             // Keep max 5 toasts, drop oldest if exceeded
             const newToasts = [...state, action.toast];
             return newToasts.length > 5 ? newToasts.slice(-5) : newToasts;
+        }
         case 'REMOVE':
             return state.filter(t => t.id !== action.id);
         case 'CLEAR':
