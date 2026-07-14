@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     branches: [main]
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -32,13 +33,25 @@ jobs:
       - name: Build
         run: npm run build
 
+  gitleaks:
+    uses: duynhlab/gha-workflows/.github/workflows/gitleaks.yml@main
+    permissions:
+      contents: read
+      security-events: write
+
   docker-build:
-    needs: lint
+    needs: [lint, gitleaks]
     uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@main
     with:
       image-name: '${{ github.event.repository.name }}'
       push: true
       sbom: true
+      # Sortable tag for Flux image automation (staging ImagePolicy sorts on
+      # the run number), alongside the default immutable sha- tag. On a v*
+      # tag push the reusable workflow already emits X.Y.Z and X.Y (leading
+      # v stripped) — same behavior as the Go services.
+      tags: |
+        type=raw,value=main-${{ github.run_number }}-${{ github.sha }},enable=${{ github.ref == 'refs/heads/main' }}
     secrets: inherit
     permissions:
       contents: read
@@ -47,6 +60,7 @@ jobs:
 
   trivy-scan:
     needs: [docker-build]
+    if: needs.docker-build.outputs.scan-status == 'pass'
     uses: duynhlab/gha-workflows/.github/workflows/trivy-scan.yml@main
     with:
       image-ref: ghcr.io/${{ github.repository }}/${{ github.event.repository.name }}@${{ needs.docker-build.outputs.digest }}
@@ -73,7 +87,7 @@ jobs:
 
   notify:
     if: always()
-    needs: [lint, docker-build, trivy-scan, docker-sign]
+    needs: [lint, gitleaks, docker-build, trivy-scan, docker-sign]
     uses: duynhlab/gha-workflows/.github/workflows/status.yml@main
     with:
       slack_channel_id: "C0AD82A9A74"
