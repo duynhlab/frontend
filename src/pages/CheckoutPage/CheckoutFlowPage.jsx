@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import {
     createSession, setAddress, setShipping, setPayment, applyPromo, removePromo,
@@ -8,19 +8,19 @@ import {
 import { useToast } from '../../components/common/ToastProvider';
 import { toUserFriendlyError } from '../../utils/errorMessages';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { parseApiError } from '../../utils/parseApiError';
+import LoadingState from '../../components/common/LoadingState';
+import EmptyState from '../../components/common/EmptyState';
+import ApiError from '../../components/common/ApiError';
 import ApiDebug from '../../components/common/ApiDebug';
-
-// Test payment tokens — opaque references, never card data (the mock
-// provider approves/declines by amount, not token).
-const PAYMENT_METHODS = [
-    { token: 'tok_visa', label: 'Visa test card' },
-    { token: 'tok_mastercard', label: 'Mastercard test card' },
-];
-
-const SHIPPING_METHODS = [
-    { key: 'standard', label: 'Standard' },
-    { key: 'express', label: 'Express' },
-];
+import Stepper from './Stepper';
+import { SHIPPING_METHODS, PAYMENT_METHODS } from './constants';
+import AddressStep from './AddressStep';
+import ShippingStep from './ShippingStep';
+import PaymentStep from './PaymentStep';
+import ReviewStep from './ReviewStep';
+import OrderSummary from './OrderSummary';
+import './checkout.css';
 
 // Session status → funnel step (the server FSM is the source of truth; the
 // UI just renders whatever state comes back).
@@ -30,14 +30,14 @@ const STEP_OF_STATUS = {
 const STEP_LABELS = ['Address', 'Shipping', 'Payment', 'Review'];
 
 /**
- * Checkout Flow — the RFC-0015 session funnel (P3 SPA cutover).
- * POST/PUT /checkout/v1/private/checkout/sessions[…]; the legacy direct
- * order POST stays at /checkout/legacy (dual-entry until P6).
+ * Checkout Flow — the RFC-0015 session funnel (single entry since the legacy
+ * one-shot checkout was removed): POST/PUT
+ * /checkout/v1/private/checkout/sessions[…].
  */
 export default function CheckoutFlowPage() {
     const navigate = useNavigate();
     const { notify } = useToast();
-    const { mutate: globalMutate } = useSWRConfig();
+    const { mutate: globalMutate, cache } = useSWRConfig();
 
     const [session, setSession] = useState(null);
     const [loadError, setLoadError] = useState(null);
@@ -46,28 +46,27 @@ export default function CheckoutFlowPage() {
         full_name: '', line1: '', line2: '', city: '', region: '', post_code: '', country: 'VN',
     });
     const [shippingMethod, setShippingMethod] = useState(SHIPPING_METHODS[0].key);
-    const [editingAddress, setEditingAddress] = useState(false);
     const [paymentToken, setPaymentToken] = useState(PAYMENT_METHODS[0].token);
-    const [promoCode, setPromoCode] = useState('');
+    // null = follow the server FSM; a number = the user navigated back via the
+    // stepper (the server legally re-enters earlier states on re-submit).
+    const [stepOverride, setStepOverride] = useState(null);
+    const [promoError, setPromoError] = useState(null);
+    const headingRef = useRef(null);
 
     const isAuthenticated = !!localStorage.getItem('authToken');
 
     const bootSession = useCallback(async () => {
         setLoadError(null);
+        setStepOverride(null);
         try {
             const s = await createSession();
             setSession(s);
-            if (s.address) {
-                setAddressForm((prev) => ({ ...prev, ...s.address }));
-            }
+            if (s.address) setAddressForm((prev) => ({ ...prev, ...s.address }));
             if (s.shipping_method) setShippingMethod(s.shipping_method);
         } catch (err) {
-            const code = err?.response?.data?.code;
-            if (code === 'CONFLICT') {
-                setLoadError('empty-cart');
-            } else {
-                setLoadError(toUserFriendlyError(err?.response?.data?.error || err?.message));
-            }
+            const { code, message } = parseApiError(err);
+            if (code === 'CONFLICT') setLoadError('empty-cart');
+            else setLoadError(toUserFriendlyError(message, code));
         }
     }, []);
 
@@ -79,22 +78,34 @@ export default function CheckoutFlowPage() {
         bootSession();
     }, [isAuthenticated, navigate, bootSession]);
 
+    const serverStep = session ? (STEP_OF_STATUS[session.status] ?? 1) : 1;
+    const step = stepOverride ?? serverStep;
+
+    // Move focus to the step heading when the visible step changes (a11y).
+    useEffect(() => {
+        headingRef.current?.focus?.();
+    }, [step]);
+
     // Shared error handling for every funnel mutation: expired sessions are
     // recreated; a requote (409 with a `session` body) re-renders the fresh
     // quote — the Idempotency-Key is NOT consumed and stays reusable.
     const handleFunnelError = (err) => {
-        const data = err?.response?.data;
-        if (err?.response?.status === 410) {
-            notify('error', 'Session expired — starting a fresh one.');
+        const { code, message, session: requoted, status, isRateLimit } = parseApiError(err);
+        if (isRateLimit) {
+            notify('info', err.message);
+            return;
+        }
+        if (status === 410) {
+            notify('error', toUserFriendlyError(null, 'SESSION_EXPIRED'));
             bootSession();
             return;
         }
-        if (data?.session) {
-            setSession(data.session);
-            notify('error', data?.error?.message || 'Prices changed — review the updated quote and confirm again.');
+        if (requoted) {
+            setSession(requoted);
+            notify('error', toUserFriendlyError(message, code));
             return;
         }
-        notify('error', toUserFriendlyError(data?.error || data?.message || err?.message));
+        notify('error', toUserFriendlyError(message, code));
     };
 
     const run = (fn) => async (...args) => {
@@ -111,23 +122,40 @@ export default function CheckoutFlowPage() {
         }
     };
 
-    const submitPromo = async (e) => {
-        e.preventDefault();
-        if (!promoCode.trim()) return;
-        const s = await run(() => applyPromo(session.id, promoCode.trim().toUpperCase()))();
-        if (s) notify('success', 'Promo applied — totals updated.');
-    };
-    const submitRemovePromo = async () => {
-        const s = await run(() => removePromo(session.id))();
-        if (s) setPromoCode('');
-    };
-
     const submitAddress = async () => {
         const s = await run(() => setAddress(session.id, address))();
-        if (s) setEditingAddress(false);
+        if (s) setStepOverride(null);
     };
-    const submitShipping = run(() => setShipping(session.id, shippingMethod));
-    const submitPayment = run(() => setPayment(session.id, paymentToken));
+    const submitShipping = async () => {
+        const s = await run(() => setShipping(session.id, shippingMethod))();
+        if (s) setStepOverride(null);
+    };
+    const submitPayment = async () => {
+        const s = await run(() => setPayment(session.id, paymentToken))();
+        if (s) setStepOverride(null);
+    };
+
+    const submitApplyPromo = async (code) => {
+        setPromoError(null);
+        setBusy(true);
+        try {
+            const s = await applyPromo(session.id, code);
+            setSession(s);
+            notify('success', 'Promo applied — totals updated.');
+            return true;
+        } catch (err) {
+            const { code: errCode, message, session: requoted } = parseApiError(err);
+            if (requoted) setSession(requoted);
+            setPromoError(toUserFriendlyError(message, errCode));
+            return false;
+        } finally {
+            setBusy(false);
+        }
+    };
+    const submitRemovePromo = async () => {
+        setPromoError(null);
+        await run(() => removePromo(session.id))();
+    };
 
     const submitConfirm = async () => {
         setBusy(true);
@@ -160,213 +188,136 @@ export default function CheckoutFlowPage() {
         }
     };
 
-    const serverStep = session ? (STEP_OF_STATUS[session.status] ?? 1) : 1;
-    const step = editingAddress ? 1 : serverStep;
+    // Rebuild the quote from the current cart: the session pins items at
+    // creation, so a cart edited afterwards diverges silently.
+    const handleRebuildQuote = async () => {
+        setBusy(true);
+        try {
+            await cancelSession(session.id);
+            clearIdempotencyKey(session.id);
+        } catch { /* stale/expired session — safe to continue */ }
+        setBusy(false);
+        await bootSession();
+    };
+
     const priceChanged = session?.items?.some((it) => it.price_changed);
+    // Session ≠ cart detection: compare against the cart-count SWR cache the
+    // navbar keeps fresh (no extra request from this page).
+    const cartCount = cache.get('cart-count')?.data?.count;
+    const sessionCount = session?.items?.reduce((n, it) => n + it.quantity, 0);
+    const cartDiverged = session && session.status !== 'completed'
+        && Number.isFinite(cartCount) && Number.isFinite(sessionCount)
+        && cartCount !== sessionCount;
 
     return (
-        <div className="page container">
-            <Link to="/cart" className="back-link">← Back to Cart</Link>
-            <h2>Checkout</h2>
-            <p className="api-label">API: /checkout/v1/private/checkout/sessions</p>
+        <div className="page container checkout-page">
+            <div className="checkout-header">
+                <h2 ref={headingRef} tabIndex={-1}>Checkout</h2>
+            </div>
 
             {loadError === 'empty-cart' && (
-                <div className="empty">
-                    <p>Cart is empty. Add items first.</p>
-                    <Link to="/">Browse Products</Link>
-                </div>
+                <EmptyState icon="🛒" message="Your cart is empty — add items before checking out." />
             )}
             {loadError && loadError !== 'empty-cart' && (
-                <div className="error-box">
-                    <strong>Error:</strong> {loadError}
-                    <button type="button" className="primary" style={{ marginTop: '0.75rem' }} onClick={bootSession}>
-                        Try Again
-                    </button>
-                </div>
+                <ApiError error={loadError} onRetry={bootSession} />
             )}
-            {!session && !loadError && <div className="loading">Loading...</div>}
+            {!session && !loadError && <LoadingState variant="card" count={2} />}
 
             {/* Success */}
             {session?.status === 'completed' && (
-                <>
-                    <div className="success">
-                        <h3>✅ Order Placed!</h3>
-                        <p>Order ID: {session.order_id}</p>
-                        <p>Total: {formatCurrency(session.total)}</p>
+                <div className="card checkout-success">
+                    <div className="success-icon" aria-hidden="true">✅</div>
+                    <h3>Order placed!</h3>
+                    <p className="order-meta">
+                        Order #{session.order_id} · {formatCurrency(session.total)}
+                    </p>
+                    <div className="step-actions">
+                        <button className="primary" onClick={() => navigate('/orders')}>
+                            View orders
+                        </button>
+                        <button onClick={() => navigate('/')}>Continue shopping</button>
                     </div>
-                    <button onClick={() => navigate('/orders')} style={{ marginTop: '0.75rem' }}>
-                        View Orders
-                    </button>
                     <ApiDebug data={session} />
-                </>
+                </div>
             )}
 
             {session && session.status !== 'completed' && (
                 <>
-                    {/* Step indicator */}
-                    <ol className="checkout-steps" aria-label="Checkout progress">
-                        {STEP_LABELS.map((label, i) => (
-                            <li key={label} className={step === i + 1 ? 'active' : step > i + 1 ? 'done' : ''}>
-                                {label}
-                            </li>
-                        ))}
-                    </ol>
+                    <Stepper
+                        labels={STEP_LABELS}
+                        current={step}
+                        disabled={busy}
+                        onStepClick={setStepOverride}
+                    />
 
                     {priceChanged && (
-                        <div className="error-box" role="alert">
-                            Some prices changed since you carted them — the totals below are
-                            the current catalog prices.
+                        <div className="checkout-alert warning" role="alert">
+                            <span aria-hidden="true">⚠️</span>
+                            <div className="alert-body">
+                                <p>
+                                    Some prices or availability changed since you carted these
+                                    items — the quote below uses the current catalog. Items
+                                    marked <em>price updated</em> were adjusted.
+                                </p>
+                            </div>
                         </div>
                     )}
 
-                    <div className="two-col">
-                        {/* Left: the active step */}
+                    {cartDiverged && (
+                        <div className="checkout-alert info" role="status">
+                            <span aria-hidden="true">ℹ️</span>
+                            <div className="alert-body">
+                                <p>
+                                    Your cart changed after this quote was created — the summary
+                                    reflects the older snapshot.
+                                </p>
+                            </div>
+                            <button type="button" onClick={handleRebuildQuote} disabled={busy}>
+                                Rebuild quote
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="checkout-grid">
                         <div className="card">
                             {step === 1 && (
-                                <form onSubmit={(e) => { e.preventDefault(); submitAddress(); }}>
-                                    <h3>Shipping address</h3>
-                                    {[
-                                        ['full_name', 'Full name', true],
-                                        ['line1', 'Address line 1', true],
-                                        ['line2', 'Address line 2', false],
-                                        ['city', 'City', true],
-                                        ['region', 'Region/State', false],
-                                        ['post_code', 'Postal code', false],
-                                        ['country', 'Country code', true],
-                                    ].map(([field, label, required]) => (
-                                        <label key={field} className="form-field">
-                                            <span>{label}{required ? ' *' : ''}</span>
-                                            <input
-                                                value={address[field]}
-                                                required={required}
-                                                onChange={(e) => setAddressForm({ ...address, [field]: e.target.value })}
-                                            />
-                                        </label>
-                                    ))}
-                                    <button className="primary" type="submit" disabled={busy}>
-                                        {busy ? 'Saving…' : 'Continue to shipping'}
-                                    </button>
-                                </form>
+                                <AddressStep
+                                    address={address}
+                                    onChange={setAddressForm}
+                                    onSubmit={submitAddress}
+                                    busy={busy}
+                                />
                             )}
-
                             {step === 2 && (
-                                <form onSubmit={(e) => { e.preventDefault(); submitShipping(); }}>
-                                    <h3>Shipping method</h3>
-                                    {SHIPPING_METHODS.map((m) => (
-                                        <label key={m.key} className="payment-method-option">
-                                            <input
-                                                type="radio"
-                                                name="shipping-method"
-                                                value={m.key}
-                                                checked={shippingMethod === m.key}
-                                                onChange={() => setShippingMethod(m.key)}
-                                            />
-                                            <span>{m.label}</span>
-                                        </label>
-                                    ))}
-                                    <p className="text-muted">
-                                        The fee is quoted by shipping-service for your destination;
-                                        tax applies on subtotal + fee.
-                                    </p>
-                                    <button className="primary" type="submit" disabled={busy}>
-                                        {busy ? 'Quoting…' : 'Continue to payment'}
-                                    </button>
-                                    <button type="button" onClick={() => setEditingAddress(true)} disabled={busy}>
-                                        Edit address
-                                    </button>
-                                </form>
+                                <ShippingStep
+                                    method={shippingMethod}
+                                    onChange={setShippingMethod}
+                                    onSubmit={submitShipping}
+                                    onEditAddress={() => setStepOverride(1)}
+                                    busy={busy}
+                                />
                             )}
-
                             {step === 3 && (
-                                <form onSubmit={(e) => { e.preventDefault(); submitPayment(); }}>
-                                    <h3>Payment method</h3>
-                                    {PAYMENT_METHODS.map((m) => (
-                                        <label key={m.token} className="payment-method-option">
-                                            <input
-                                                type="radio"
-                                                name="payment-method"
-                                                value={m.token}
-                                                checked={paymentToken === m.token}
-                                                onChange={() => setPaymentToken(m.token)}
-                                            />
-                                            <span>{m.label}</span>
-                                            <code className="text-muted">{m.token}</code>
-                                        </label>
-                                    ))}
-                                    <p className="text-muted payment-method-hint">
-                                        Test tokens only — never real card data.
-                                    </p>
-                                    <button className="primary" type="submit" disabled={busy}>
-                                        {busy ? 'Saving…' : 'Review order'}
-                                    </button>
-                                </form>
+                                <PaymentStep
+                                    token={paymentToken}
+                                    onChange={setPaymentToken}
+                                    onSubmit={submitPayment}
+                                    busy={busy}
+                                />
                             )}
-
                             {step === 4 && (
-                                <div>
-                                    <h3>Review &amp; confirm</h3>
-                                    <p>
-                                        Ship to: <strong>{session.address?.full_name}</strong>,{' '}
-                                        {session.address?.line1}, {session.address?.city},{' '}
-                                        {session.address?.country} — {session.shipping_method}
-                                    </p>
-                                    <button className="primary" style={{ width: '100%' }} onClick={submitConfirm} disabled={busy}>
-                                        {busy ? 'Placing order…' : `Place order — ${formatCurrency(session.total)}`}
-                                    </button>
-                                    <p className="text-muted payment-method-hint">
-                                        Double-clicks and retries are safe: this button is idempotent.
-                                    </p>
-                                </div>
+                                <ReviewStep session={session} onConfirm={submitConfirm} busy={busy} />
                             )}
                         </div>
 
-                        {/* Right: live totals */}
-                        <div className="card">
-                            <h3>Order summary</h3>
-                            <div className="table-wrapper">
-                                <table>
-                                    <tbody>
-                                        {session.items?.map((it) => (
-                                            <tr key={it.product_id} className={it.price_changed ? 'price-changed' : ''}>
-                                                <td>{it.product_name} × {it.quantity}{it.price_changed ? ' ⚠' : ''}</td>
-                                                <td>{formatCurrency(it.unit_price * it.quantity)}</td>
-                                            </tr>
-                                        ))}
-                                        <tr><th>Subtotal</th><td>{formatCurrency(session.subtotal)}</td></tr>
-                                        {session.discount > 0 && (
-                                            <tr><th>Discount ({session.promo_code})</th><td>−{formatCurrency(session.discount)}</td></tr>
-                                        )}
-                                        <tr><th>Shipping</th><td>{formatCurrency(session.shipping_fee)}</td></tr>
-                                        <tr><th>Tax</th><td>{formatCurrency(session.tax)}</td></tr>
-                                        <tr><th><strong>Total</strong></th><td><strong>{formatCurrency(session.total)}</strong></td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            {/* Promo: a validated preview — the use is only counted at confirm */}
-                            {session.promo_code ? (
-                                <p className="text-muted">
-                                    Code <strong>{session.promo_code}</strong> applied{' '}
-                                    <button type="button" onClick={submitRemovePromo} disabled={busy}>Remove</button>
-                                </p>
-                            ) : (
-                                <form onSubmit={submitPromo} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                    <input
-                                        placeholder="Promo code"
-                                        value={promoCode}
-                                        onChange={(e) => setPromoCode(e.target.value)}
-                                        aria-label="Promo code"
-                                    />
-                                    <button type="submit" disabled={busy || !promoCode.trim()}>Apply</button>
-                                </form>
-                            )}
-                            <button type="button" onClick={handleCancel} disabled={busy} style={{ marginTop: '0.75rem' }}>
-                                Cancel checkout
-                            </button>
-                            <p className="text-muted payment-method-hint">
-                                Legacy one-shot checkout is still available{' '}
-                                <Link to="/checkout/legacy">here</Link>.
-                            </p>
-                        </div>
+                        <OrderSummary
+                            session={session}
+                            busy={busy}
+                            promoError={promoError}
+                            onApplyPromo={submitApplyPromo}
+                            onRemovePromo={submitRemovePromo}
+                            onCancel={handleCancel}
+                        />
                     </div>
                     <ApiDebug data={session} />
                 </>
