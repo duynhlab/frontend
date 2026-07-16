@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Link, NavLink, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { getCartCount } from './api/cartApi';
 import { getNotificationCount } from './api/notificationApi';
@@ -130,6 +130,8 @@ function App() {
                         <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
                         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                         <Route path="/login" element={<LoginPage />} />
+                        {/* Unknown paths (incl. the removed /checkout/legacy) go home. */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </Suspense>
             </main>
