@@ -165,7 +165,7 @@ export default function NotificationPage() {
             {loading && <LoadingState message="Loading notifications..." variant="list" count={3} />}
 
             {/* Error State */}
-            {!loading && error && (
+            {!loading && error && notificationsList.length === 0 && (
                 <ApiError error={error} endpoint="GET /notification/v1/private/notifications" />
             )}
 
@@ -175,7 +175,12 @@ export default function NotificationPage() {
             )}
 
             {/* Notifications Content */}
-            {!loading && !error && notificationsList.length > 0 && (
+            {!loading && error && notificationsList.length > 0 && (
+                <div className="error-box" role="alert">
+                    {error?.isRateLimit ? error.message : 'Refreshing failed — showing the last loaded list.'}
+                </div>
+            )}
+            {!loading && notificationsList.length > 0 && (
                 <>
                     {/* Summary */}
                     <div className="notification-summary">
