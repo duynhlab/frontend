@@ -11,7 +11,6 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { parseApiError } from '../../utils/parseApiError';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
-import ApiError from '../../components/common/ApiError';
 import ApiDebug from '../../components/common/ApiDebug';
 import Stepper from './Stepper';
 import { SHIPPING_METHODS, PAYMENT_METHODS } from './constants';
@@ -219,7 +218,14 @@ export default function CheckoutFlowPage() {
                 <EmptyState icon="🛒" message="Your cart is empty — add items before checking out." />
             )}
             {loadError && loadError !== 'empty-cart' && (
-                <ApiError error={loadError} onRetry={bootSession} />
+                <div className="error-box" role="alert">
+                    <strong>Error:</strong> {loadError}
+                    <div className="step-actions">
+                        <button type="button" className="primary" onClick={bootSession}>
+                            Try again
+                        </button>
+                    </div>
+                </div>
             )}
             {!session && !loadError && <LoadingState variant="card" count={2} />}
 
