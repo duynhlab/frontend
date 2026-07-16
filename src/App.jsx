@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Link, NavLink, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { getCartCount } from './api/cartApi';
 import { getNotificationCount } from './api/notificationApi';
@@ -13,7 +13,6 @@ const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
 const ProductListPage = lazy(() => import('./pages/ProductListPage/ProductListPage'));
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage/ProductDetailPage'));
 const CartPage = lazy(() => import('./pages/CartPage/CartPage'));
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage/CheckoutPage'));
 const CheckoutFlowPage = lazy(() => import('./pages/CheckoutPage/CheckoutFlowPage'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage/OrdersPage'));
 const NotificationPage = lazy(() => import('./pages/NotificationPage/NotificationPage'));
@@ -127,11 +126,12 @@ function App() {
                         <Route path="/products/:id" element={<ProductDetailPage />} />
                         <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
                         <Route path="/checkout" element={<ProtectedRoute><CheckoutFlowPage /></ProtectedRoute>} />
-                        <Route path="/checkout/legacy" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                         <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
                         <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
                         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                         <Route path="/login" element={<LoginPage />} />
+                        {/* Unknown paths (incl. the removed /checkout/legacy) go home. */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </Suspense>
             </main>

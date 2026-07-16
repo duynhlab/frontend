@@ -154,9 +154,17 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
-            // Extract error message from response
-            const message = error.response.data?.error || 'An error occurred';
-            error.message = message;
+            // Extract error message from response. Two envelopes exist:
+            // RespondError ({error: "<string>", code}) and the checkout
+            // requote 409 ({error: {code, message}, session}) — never assign
+            // an object to error.message (it renders "[object Object]").
+            const raw = error.response.data?.error;
+            if (raw && typeof raw === 'object') {
+                error.message = raw.message || 'An error occurred';
+                error.apiError = raw;
+            } else {
+                error.message = raw || 'An error occurred';
+            }
         } else if (error.request) {
             // Network error
             error.message = 'Network error. Please check your connection.';
