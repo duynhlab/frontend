@@ -97,6 +97,9 @@ function App() {
                             <NavLink to="/cart">
                                 Cart {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                             </NavLink>
+                            {/* Funnel shortcut — only when there is something
+                                to check out (an empty cart would dead-end). */}
+                            {cartCount > 0 && <NavLink to="/checkout">Checkout</NavLink>}
                             <NavLink to="/orders">Orders</NavLink>
                             <NavLink to="/notifications">
                                 Notifications {notificationCount > 0 && <span className="notification-badge">{notificationCount}</span>}
