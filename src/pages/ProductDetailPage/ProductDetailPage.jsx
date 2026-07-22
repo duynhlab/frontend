@@ -8,7 +8,7 @@ import ApiError from '../../components/common/ApiError';
 import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
 import StarRating from '../../components/common/StarRating';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';

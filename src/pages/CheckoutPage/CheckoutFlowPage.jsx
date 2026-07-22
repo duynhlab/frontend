@@ -5,7 +5,7 @@ import {
     createSession, setAddress, setShipping, setPayment, applyPromo, removePromo,
     confirmSession, cancelSession, idempotencyKeyFor, clearIdempotencyKey,
 } from '../../api/checkoutApi';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 import { toUserFriendlyError } from '../../utils/errorMessages';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { parseApiError } from '../../utils/parseApiError';

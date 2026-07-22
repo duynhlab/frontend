@@ -1,11 +1,12 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { useReducer, useCallback } from 'react';
 import ToastViewport from './ToastViewport';
+import { ToastContext } from './ToastContext';
 
 /**
  * Global Toast Notification System
  * 
  * Usage:
- *   const { notify } = useToast();
+ *   import { useToast } from '../../hooks/useToast';
  *   notify('success', 'Item added to cart');
  *   notify('error', 'Failed to save');
  *   notify('info', 'You already reviewed this product');
@@ -13,8 +14,6 @@ import ToastViewport from './ToastViewport';
  * Options:
  *   notify('success', 'Message', { duration: 5000 }); // custom duration in ms
  */
-
-const ToastContext = createContext(null);
 
 // Toast reducer for managing the queue
 function toastReducer(state, action) {
@@ -82,14 +81,6 @@ export function ToastProvider({ children }) {
             <ToastViewport toasts={toasts} onDismiss={dismiss} />
         </ToastContext.Provider>
     );
-}
-
-export function useToast() {
-    const context = useContext(ToastContext);
-    if (!context) {
-        throw new Error('useToast must be used within a ToastProvider');
-    }
-    return context;
 }
 
 export default ToastProvider;

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
 import { useApiQuery } from '../../hooks/useApiQuery';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 import { formatCurrency } from '../../utils/formatCurrency';
 import ApiDebug from '../../components/common/ApiDebug';
 
