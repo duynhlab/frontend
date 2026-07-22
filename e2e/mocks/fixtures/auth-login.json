@@ -1,0 +1,9 @@
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.e2e-mock-access",
+  "refresh_token": "e2e-mock-refresh-token",
+  "user": {
+    "id": "user-e2e-001",
+    "username": "alice",
+    "email": "alice@example.com"
+  }
+}

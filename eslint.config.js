@@ -6,7 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-    { ignores: ['dist', 'node_modules'] },
+    { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'e2e/**'] },
     js.configs.recommended,
     react.configs.flat.recommended,
     react.configs.flat['jsx-runtime'],

@@ -85,9 +85,15 @@ npm run dev        # Vite dev server, hot reload
 npm run build      # production bundle → dist/
 npm run preview    # serve the built bundle locally
 npm run lint       # ESLint
+npm run test:e2e   # Playwright E2E (mocked APIs, no gateway)
+npm run test:e2e:ui      # Playwright UI mode (local debugging)
+npm run test:e2e:headed  # Playwright headed browser
+npm run test:e2e:report  # Open last HTML report
 ```
 
-- **There is no test script.** Do not invent `npm test` / `npm run test`.
+- **E2E tests** use Playwright with `page.route()` mocks — no live gateway
+  required. Playwright starts Vite via `webServer` in `playwright.config.js`.
+- First-time local setup: `npx playwright install chromium`
 - Docker: `docker build -t frontend .` then `docker run -p 80:80 frontend`.
 
 ## Conventions
