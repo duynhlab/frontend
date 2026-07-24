@@ -79,11 +79,10 @@ export default function LoginPage() {
             // other tabs. JWT-only — RFC-0009 Phase 5 removed the opaque token.
             setTokens(result);
 
-            notify('success', `${mode === 'login' ? 'Login' : 'Registration'} successful!`);
-            // Redirect to returnTo URL (or home)
-            setTimeout(() => navigate(returnTo), 800);
+            notify('success', 'Welcome back');
+            navigate(returnTo);
         } catch (err) {
-            notify('error', err.message || 'Authentication failed');
+            notify('error', err.message || 'Invalid email or password');
             if (import.meta.env.DEV) {
                 // Log only diagnostics — the raw axios error carries the request
                 // body (err.config.data) which contains the plaintext password.
@@ -106,7 +105,7 @@ export default function LoginPage() {
                     <button
                         className="primary"
                         style={{ width: '100%', marginBottom: '0.5rem' }}
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/products')}
                     >
                         Go to Products
                     </button>

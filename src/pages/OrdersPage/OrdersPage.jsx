@@ -57,7 +57,7 @@ export default function OrdersPage() {
                 console.log('[API] GET /orders/' + orderId + '/details:', result);
             }
         } catch (err) {
-            notify('error', 'Failed to load order details');
+            notify('error', 'Cannot load orders');
             if (import.meta.env.DEV) {
                 console.error('[API ERROR]', err);
             }
@@ -125,7 +125,7 @@ export default function OrdersPage() {
                         <h3>Order History</h3>
                         {ordersList.length === 0 ? (
                             <EmptyState message="No orders yet" icon="📦">
-                                <Link to="/">Start Shopping</Link>
+                                <Link to="/products">Start Shopping</Link>
                             </EmptyState>
                         ) : (
                             <div className="table-wrapper">

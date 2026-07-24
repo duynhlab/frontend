@@ -8,11 +8,11 @@ import ApiError from '../../components/common/ApiError';
 import { useProducts } from '../../hooks/useProducts';
 import './ProductListPage.css';
 
-const PRODUCTS_PER_PAGE = 30;
+const PRODUCTS_PER_PAGE = 24;
 
 /**
  * ProductListPage - Product Catalog at /products
- * API: GET /product/v1/public/products?page=N&page_size=30
+ * API: GET /product/v1/public/products?page=N&page_size=24
  *
  * Best practices applied:
  * - rerender-derived-state-no-effect: page derived from URL params, not useState
@@ -28,7 +28,7 @@ export default function ProductListPage() {
 
     const { products, total, totalPages, loading, error } = useProducts({
         page,
-        limit: PRODUCTS_PER_PAGE,
+        pageSize: PRODUCTS_PER_PAGE,
     });
 
     // rerender-transitions: wrap non-urgent update in startTransition
@@ -51,7 +51,7 @@ export default function ProductListPage() {
             </div>
 
             {/* Loading State */}
-            {loading ? <GridSkeleton count={8} /> : null}
+            {loading ? <GridSkeleton count={24} /> : null}
 
             {/* Error State */}
             {!loading && error ? (

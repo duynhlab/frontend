@@ -23,7 +23,7 @@ export default function HomePage() {
             <div className="container">
                 <section className="home-page__hero">
                     <h1 className="home-page__title">
-                        Welcome to <span className="text-accent">Shop</span> 👋
+                        Welcome to <span className="text-accent">DuynhLab</span> 👋
                     </h1>
                     <p className="home-page__subtitle">
                         Discover our curated collection of products. Browse, compare, and find exactly what you need.

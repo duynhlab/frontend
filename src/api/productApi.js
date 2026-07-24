@@ -1,13 +1,12 @@
 import apiClient from './client';
-import { mockGetProducts } from './mockData';
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+import { USE_MOCK } from './useMock';
+import * as mock from './mock';
 
 /**
  * Product API — Variant A edge paths (all public).
  * Edge paths (gateway pass-through): /product/v1/public/products, /products/:id, /products/:id/details
  *
- * When VITE_USE_MOCK=true, getProducts returns mock data without touching the network.
+ * When VITE_USE_MOCK=true, all product calls use the in-memory mock store.
  */
 
 /**
@@ -16,9 +15,7 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
  * callers read the array from `.items` (see useProducts).
  */
 export async function getProducts(params = {}) {
-    if (USE_MOCK) {
-        return mockGetProducts(params);
-    }
+    if (USE_MOCK) return mock.mockGetProducts(params);
     const response = await apiClient.get('/product/v1/public/products', { params });
     return response.data;
 }
@@ -27,6 +24,7 @@ export async function getProducts(params = {}) {
  * GET /product/v1/public/products/:id
  */
 export async function getProduct(id) {
+    if (USE_MOCK) return mock.mockGetProduct(id);
     const response = await apiClient.get(`/product/v1/public/products/${id}`);
     return response.data;
 }
@@ -36,6 +34,7 @@ export async function getProduct(id) {
  * Aggregation endpoint — use this for the Product Detail Page.
  */
 export async function getProductDetails(id) {
+    if (USE_MOCK) return mock.mockGetProductDetails(id);
     const response = await apiClient.get(`/product/v1/public/products/${id}/details`);
     return response.data;
 }

@@ -7,7 +7,7 @@ test.describe('Product list', () => {
         await productListPage.goto();
 
         await expect(productListPage.heading).toBeVisible();
-        await expect(productListPage.productCards).toHaveCount(3);
+        await expect(productListPage.productCards).toHaveCount(24);
         await expect(page.getByText('Wireless Headphones')).toBeVisible();
         await expect(page.getByText('Smart Watch')).toBeVisible();
     });
@@ -21,6 +21,6 @@ test.describe('Product list', () => {
 
         await expect(page).toHaveURL(/page=2/);
         await expect(productListPage.pagination.getByText('Page 2 of 2', { exact: true })).toBeVisible();
-        await expect(page.getByText('USB-C Hub')).toBeVisible();
+        await expect(page.getByText('Ergonomic Chair')).toBeVisible();
     });
 });

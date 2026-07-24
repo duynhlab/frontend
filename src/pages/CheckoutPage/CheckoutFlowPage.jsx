@@ -35,7 +35,7 @@ const STEP_LABELS = ['Address', 'Shipping', 'Payment', 'Review'];
  */
 export default function CheckoutFlowPage() {
     const navigate = useNavigate();
-    const { notify } = useToast();
+    const { notify, loading: toastLoading, dismiss: dismissToast, success: toastSuccess } = useToast();
     const { mutate: globalMutate, cache } = useSWRConfig();
 
     const [session, setSession] = useState(null);
@@ -158,18 +158,18 @@ export default function CheckoutFlowPage() {
 
     const submitConfirm = async () => {
         setBusy(true);
+        const toastId = toastLoading('Placing order...');
         try {
-            // One key per session, persisted: reload/double-click/retry all
-            // converge on the same order.
             const key = idempotencyKeyFor(session.id);
             const s = await confirmSession(session.id, key);
             setSession(s);
             clearIdempotencyKey(session.id);
-            notify('success', 'Order placed!');
-            // The fulfillment saga clears the cart server-side; reconcile the badge.
+            dismissToast(toastId);
+            toastSuccess('Order placed successfully');
             globalMutate('cart-count');
             globalMutate('cart');
         } catch (err) {
+            dismissToast(toastId);
             handleFunnelError(err);
         } finally {
             setBusy(false);
@@ -241,7 +241,7 @@ export default function CheckoutFlowPage() {
                         <button className="primary" onClick={() => navigate('/orders')}>
                             View orders
                         </button>
-                        <button onClick={() => navigate('/')}>Continue shopping</button>
+                        <button onClick={() => navigate('/products')}>Continue shopping</button>
                     </div>
                     <ApiDebug data={session} />
                 </div>

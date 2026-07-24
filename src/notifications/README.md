@@ -7,17 +7,19 @@ This folder is a **placeholder** for future integration with the backend **notif
 Toast notifications are triggered **locally** via the `useToast()` hook:
 
 ```jsx
-import { useToast } from '../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 
 function MyComponent() {
     const { notify } = useToast();
-    
-    // Trigger a toast
+
     notify('success', 'Item added to cart');
     notify('error', 'Failed to save');
     notify('info', 'You already reviewed this product');
 }
 ```
+
+Persistent notification history is rendered by `NotificationPage` and fetched from
+`notificationApi` — that is separate from local toasts.
 
 ## Future Integration
 
@@ -28,20 +30,19 @@ To consume real-time notifications from the notification microservice:
    - Listens for incoming events
    - Calls `notify(type, message)` for each event
 
-2. **Wire it at app root** (similar to `ToastProvider`):
+2. **Wire it at app root**:
 
 ```jsx
 // Example: frontend/src/notifications/NotificationConnector.jsx
 import { useEffect } from 'react';
-import { useToast } from '../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 
 export function NotificationConnector({ children }) {
     const { notify } = useToast();
 
     useEffect(() => {
-        // Connect to notification service
         const ws = new WebSocket('ws://notification-svc/subscribe');
-        
+
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             notify(data.type || 'info', data.message);
@@ -54,31 +55,22 @@ export function NotificationConnector({ children }) {
 }
 ```
 
-3. **Wrap in main.jsx**:
-
-```jsx
-<ToastProvider>
-    <NotificationConnector>
-        <App />
-    </NotificationConnector>
-</ToastProvider>
-```
-
 ## API Reference
 
 ### `notify(type, message, options?)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `type` | `'success' \| 'error' \| 'info'` | Notification severity |
+| `type` | `'success' \| 'error' \| 'info' \| 'warning'` | Notification severity |
 | `message` | `string` | Text to display |
-| `options.duration` | `number` | Auto-dismiss time in ms (default: 4000, 0 = no auto-dismiss) |
+| `options.duration` | `number` | Auto-dismiss time in ms |
 
-### Returns
-- `id: number` - Can be used with `dismiss(id)` for manual dismissal
+### Extended helpers
+
+`useToast()` also exposes `success`, `error`, `info`, `warning`, `loading`, `dismiss`, `promise`, and `apiError`.
 
 ## Related Files
 
-- `components/common/ToastProvider.jsx` - Context + hook
-- `components/common/ToastViewport.jsx` - UI component
-- `components/common/toast.css` - Styles
+- `hooks/useToast.js` — react-hot-toast adapter
+- `App.jsx` — `<Toaster />` mount point
+- `pages/NotificationPage/` — backend notification history (not toasts)

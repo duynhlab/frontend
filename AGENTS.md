@@ -55,7 +55,7 @@ frontend/
 │   │   ├── authApi.js  #   login/register/refresh/logout
 │   │   ├── cartApi.js  productApi.js  orderApi.js  reviewApi.js
 │   │   ├── userApi.js  notificationApi.js  shippingApi.js
-│   │   └── mockData.js #   mock fixtures (VITE_USE_MOCK=true)
+│   │   └── mock/       #   seed + in-memory store (VITE_USE_MOCK=true)
 │   ├── auth/           # tokens.js (access+refresh pair store), session.js (logout: revoke family + clear)
 │   ├── components/
 │   │   ├── common/     #   reusable UI (toasts, skeletons, pagination, errors)

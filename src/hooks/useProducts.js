@@ -6,9 +6,9 @@ import { getProducts } from '../api/productApi';
  * SWR provides automatic request deduplication, caching, and revalidation
  * NOTE: No filter support - API doesn't have search/filter
  */
-export function useProducts({ page = 1, limit = 30 } = {}) {
+export function useProducts({ page = 1, pageSize = 24 } = {}) {
     const { data, error, isLoading } = useSWR(
-        ['products', { page, limit }],
+        ['products', { page, page_size: pageSize }],
         ([_, params]) => getProducts(params),
         {
             revalidateOnFocus: false,
@@ -23,7 +23,7 @@ export function useProducts({ page = 1, limit = 30 } = {}) {
     return {
         products: data?.items || [],
         total,
-        totalPages: data?.total_pages ?? (total ? Math.ceil(total / limit) : 0),
+        totalPages: data?.total_pages ?? (total ? Math.ceil(total / pageSize) : 0),
         loading: isLoading,
         error: error?.message || null,
     };

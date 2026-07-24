@@ -81,9 +81,10 @@ export default function NotificationPage() {
         try {
             await markOne(id);
             globalMutate('notification-count', prev => ({ count: Math.max(0, (prev?.count ?? 1) - 1) }), { revalidate: true });
+            notify('success', 'Marked as read');
         } catch (err) {
             if (err?.isRateLimit) notify('warning', err.message);
-            else notify('error', err?.message || 'Failed to mark as read');
+            else notify('error', 'Cannot update notification');
         } finally {
             mutate();
         }
@@ -98,9 +99,9 @@ export default function NotificationPage() {
         // response below, then reconciled.
         mutate(notifications?.map(n => ({ ...n, read: true })), false);
         try {
-            const res = await markAllAsRead();
+            await markAllAsRead();
             globalMutate('notification-count', { count: 0 }, { revalidate: true });
-            notify('success', `Marked ${res?.updated ?? ids.length} as read`);
+            notify('success', 'All notifications marked as read');
         } catch (err) {
             if (err?.isRateLimit) notify('warning', err.message);
             else notify('error', 'Some notifications could not be marked as read');

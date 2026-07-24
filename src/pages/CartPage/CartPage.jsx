@@ -31,19 +31,18 @@ export default function CartPage() {
     const items = cart?.items || [];
 
     // Run a cart write, then revalidate the cart and sync the header badge
-    const runCartAction = async (itemId, action, successMessage) => {
+    const runCartAction = async (itemId, action, { successMessage, errorMessage = 'Cannot update cart' } = {}) => {
         setActionLoading(itemId);
         try {
             await action();
-            const updated = await mutate();  // revalidate 'cart' in place (no full-page flash)
-            // Set the header badge from the fresh list (same SUM(quantity) the
-            // backend /count uses) so it updates instantly, then revalidate to
-            // reconcile.
+            const updated = await mutate();
             const count = (updated?.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0);
             globalMutate('cart-count', { count }, { revalidate: true });
-            notify('success', successMessage);
+            if (successMessage) {
+                notify('success', successMessage);
+            }
         } catch (err) {
-            notify('error', err.message);
+            notify('error', err.message || errorMessage);
         } finally {
             setActionLoading(null);
         }
@@ -51,11 +50,15 @@ export default function CartPage() {
 
     const handleUpdateQuantity = (itemId, newQuantity) => {
         if (newQuantity < 1) return;
-        runCartAction(itemId, () => updateCartItem(itemId, newQuantity), 'Updated!');
+        runCartAction(itemId, () => updateCartItem(itemId, newQuantity), {
+            errorMessage: 'Cannot update quantity',
+        });
     };
 
     const handleRemoveItem = (itemId) => {
-        runCartAction(itemId, () => removeCartItem(itemId), 'Removed!');
+        runCartAction(itemId, () => removeCartItem(itemId), {
+            successMessage: 'Removed from cart',
+        });
     };
 
     // Gated state for unauthenticated users
@@ -69,7 +72,7 @@ export default function CartPage() {
                         <button className="primary" onClick={() => navigate('/login')}>
                             Login
                         </button>
-                        <button onClick={() => navigate('/')}>
+                        <button onClick={() => navigate('/products')}>
                             Continue Shopping
                         </button>
                     </div>
@@ -93,7 +96,7 @@ export default function CartPage() {
             {!loading && !error && items.length === 0 && (
                 <div className="empty">
                     <p>Your cart is empty</p>
-                    <Link to="/">Browse Products</Link>
+                    <Link to="/products">Browse Products</Link>
                 </div>
             )}
 

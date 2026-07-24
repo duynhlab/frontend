@@ -1,11 +1,10 @@
 import apiClient from './client';
+import { USE_MOCK } from './useMock';
+import * as mock from './mock';
 
 /**
  * Notification API — Variant A edge paths (all private, JWT required).
  * Edge paths (gateway pass-through): /notification/v1/private/notifications, /count, /:id
- *
- * Internal `/api/v1/notify/{email,sms}` endpoints are NOT routed through the
- * gateway; they are service-to-service only.
  */
 
 /**
@@ -13,6 +12,7 @@ import apiClient from './client';
  * Paginated envelope: { items, page, page_size, total_items, total_pages }.
  */
 export async function getNotifications() {
+    if (USE_MOCK) return mock.mockGetNotifications();
     const response = await apiClient.get('/notification/v1/private/notifications');
     return response.data?.items ?? [];
 }
@@ -21,6 +21,7 @@ export async function getNotifications() {
  * GET /notification/v1/private/notifications/:id
  */
 export async function getNotification(id) {
+    if (USE_MOCK) return mock.mockGetNotification(id);
     const response = await apiClient.get(`/notification/v1/private/notifications/${id}`);
     return response.data;
 }
@@ -29,6 +30,7 @@ export async function getNotification(id) {
  * PATCH /notification/v1/private/notifications/:id
  */
 export async function markAsRead(id) {
+    if (USE_MOCK) return mock.mockMarkAsRead(id);
     const response = await apiClient.patch(`/notification/v1/private/notifications/${id}`);
     return response.data;
 }
@@ -39,6 +41,7 @@ export async function markAsRead(id) {
  * Returns { updated: <count> }.
  */
 export async function markAllAsRead() {
+    if (USE_MOCK) return mock.mockMarkAllAsRead();
     const response = await apiClient.patch('/notification/v1/private/notifications/read-all');
     return response.data;
 }
@@ -49,6 +52,7 @@ export async function markAllAsRead() {
  * a 401 here does not yank the user to /login.
  */
 export async function getNotificationCount(config = {}) {
+    if (USE_MOCK) return mock.mockGetNotificationCount();
     const response = await apiClient.get('/notification/v1/private/notifications/count', config);
     return response.data;
 }
