@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "id": "prod-00001",
+      "name": "Wireless Headphones",
+      "price": 49.99,
+      "description": "High quality wireless headphones for everyday use.",
+      "stock": 42
+    },
+    {
+      "id": "prod-00002",
+      "name": "Smart Watch",
+      "price": 129.99,
+      "description": "High quality smart watch for everyday use.",
+      "stock": 18
+    },
+    {
+      "id": "prod-00003",
+      "name": "Mechanical Keyboard",
+      "price": 89.99,
+      "description": "High quality mechanical keyboard for everyday use.",
+      "stock": 7
+    }
+  ],
+  "page": 1,
+  "page_size": 30,
+  "total_items": 60,
+  "total_pages": 2
+}

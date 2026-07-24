@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 import { getNotifications, markAsRead, markAllAsRead } from '../../api/notificationApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useApiQuery } from '../../hooks/useApiQuery';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingState from '../../components/common/LoadingState';
 import ApiError from '../../components/common/ApiError';

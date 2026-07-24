@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, register } from '../../api/authApi';
 import { clearSession } from '../../auth/session';
 import { setTokens } from '../../auth/tokens';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 
 /**
  * Login Page - Auth APIs

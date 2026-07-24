@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getOrderDetails } from '../../api/orderApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
-import { useToast } from '../../components/common/ToastProvider';
+import { useToast } from '../../hooks/useToast';
 import PageHeader from '../../components/common/PageHeader';
 import Pagination from '../../components/common/Pagination';
 import LoadingState from '../../components/common/LoadingState';
@@ -21,7 +21,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 export default function OrdersPage() {
     const navigate = useNavigate();
     const { notify } = useToast();
-    const { isAuthenticated, _requireAuth } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     // Selected order state (for details panel)
     const [selectedOrderId, setSelectedOrderId] = useState(null);

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useToast } from '../components/common/ToastProvider';
+import { useToast } from '../hooks/useToast';
 
 /**
  * useApiMutation Hook
