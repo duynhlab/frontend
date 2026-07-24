@@ -53,7 +53,7 @@ npm run lint
 | Name | Default | Purpose |
 |------|---------|---------|
 | `VITE_API_BASE_URL` | `https://gateway.duynh.me` | Kong gateway origin. Point it at `http://localhost:8080` for local-stack, or a port-forwarded gateway. |
-| `VITE_USE_MOCK` | `false` | If `true`, `productApi.getProducts()` returns in-memory mock data (no network) — handy for UI-only work. |
+| `VITE_USE_MOCK` | `false` | If `true`, all `src/api/*` modules serve from the in-memory mock store (no gateway). Login: `alice` / `password123`. Promo code: `save10`. |
 
 ### How API calls are shaped
 

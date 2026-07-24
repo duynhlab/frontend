@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { Routes, Route, Link, NavLink, useNavigate, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { getCartCount } from './api/cartApi';
@@ -141,6 +142,37 @@ function App() {
 
             {/* Footer - always at bottom */}
             <Footer />
+
+            <Toaster
+                position="top-right"
+                gutter={8}
+                containerStyle={{
+                    top: 'calc(var(--header-height) + 0.5rem)',
+                    right: 16,
+                }}
+                toastOptions={{
+                    duration: 3500,
+                    style: {
+                        background: 'var(--bg-card)',
+                        color: 'var(--text)',
+                        border: '1px solid var(--border)',
+                    },
+                    success: {
+                        duration: 2500,
+                        iconTheme: {
+                            primary: 'var(--success)',
+                            secondary: 'var(--bg-card)',
+                        },
+                    },
+                    error: {
+                        duration: 5000,
+                        iconTheme: {
+                            primary: 'var(--error)',
+                            secondary: 'var(--bg-card)',
+                        },
+                    },
+                }}
+            />
         </div>
     );
 }

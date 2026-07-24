@@ -34,8 +34,8 @@ export default function ProfilePage() {
 
     // Update mutation
     const { mutate: saveProfile, loading: saving } = useApiMutation(updateProfile, {
-        successMessage: 'Profile updated!',
-        errorMessage: 'Failed to update profile',
+        successMessage: 'Profile updated',
+        errorMessage: 'Cannot update profile',
     });
 
     // Form state

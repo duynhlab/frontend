@@ -42,3 +42,4 @@ test-results/
 
 # Local debugging artifacts (screenshots, scratch)
 debugs-local/
+dogfood-output/

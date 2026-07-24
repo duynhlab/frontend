@@ -18,6 +18,8 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         stdout: 'ignore',
         stderr: 'pipe',
+        // E2E uses Playwright route mocks — disable in-app mock so HTTP is intercepted.
+        env: { VITE_USE_MOCK: 'false' },
     },
     projects: [
         { name: 'setup', testMatch: /auth\.setup\.js/ },

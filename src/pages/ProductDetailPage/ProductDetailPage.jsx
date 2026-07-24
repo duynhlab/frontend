@@ -150,12 +150,12 @@ export default function ProductDetailPage() {
             if (import.meta.env.DEV) {
                 console.log('[API] POST /cart:', result);
             }
-            notify('success', `Added ${quantity} item${quantity > 1 ? 's' : ''} to cart`);
+            notify('success', 'Added to cart', { id: 'cart-add' });
             setQuantity(1);
             // Bump the header badge instantly by the amount added, then reconcile.
             globalMutate('cart-count', prev => ({ count: (prev?.count ?? 0) + quantity }), { revalidate: true });
         } catch (err) {
-            notify('error', err.message || 'Failed to add to cart');
+            notify('error', err.message || 'Cannot add item to cart');
             if (import.meta.env.DEV) {
                 console.error('[API ERROR]:', err);
             }
@@ -173,7 +173,7 @@ export default function ProductDetailPage() {
 
     return (
         <div className="page container">
-            <Link to="/" className="back-link">← Back to Products</Link>
+            <Link to="/products" className="back-link">← Back to Products</Link>
             <p className="api-label">API: GET /product/v1/public/products/{id}/details</p>
 
             {/* Loading */}

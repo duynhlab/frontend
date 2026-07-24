@@ -1,24 +1,18 @@
 import apiClient from './client';
+import { USE_MOCK } from './useMock';
+import * as mock from './mock';
 
 /**
  * Checkout API — RFC-0015 session funnel (all private, JWT required).
  * Edge paths: /checkout/v1/private/checkout/sessions[…] (naming v3.0.1 —
  * checkout is process-named, resources nest under the literal segment).
- *
- * Error codes worth branching on (error.response.data.code):
- *   SESSION_EXPIRED (410)  — recreate the session
- *   PRICE_CHANGED / STOCK_UNAVAILABLE (409) — body carries the requoted
- *     session under `session`; re-render and let the user re-confirm with
- *     the SAME Idempotency-Key (the key is never consumed by a requote)
- *   IDEMPOTENCY_KEY_REQUIRED (400) — programming error, key missing
  */
 
 /**
  * POST /checkout/v1/private/checkout/sessions
- * Snapshots the cart (201) or returns the existing active session (200) —
- * idempotent, one active session per user.
  */
 export async function createSession() {
+    if (USE_MOCK) return mock.mockCreateSession();
     const response = await apiClient.post('/checkout/v1/private/checkout/sessions');
     return response.data;
 }
@@ -27,24 +21,25 @@ export async function createSession() {
  * GET /checkout/v1/private/checkout/sessions/:id
  */
 export async function getSession(id) {
+    if (USE_MOCK) return mock.mockGetSession(id);
     const response = await apiClient.get(`/checkout/v1/private/checkout/sessions/${id}`);
     return response.data;
 }
 
 /**
  * PUT /checkout/v1/private/checkout/sessions/:id/address
- * → address_set. Changing the address later invalidates the shipping quote.
  */
 export async function setAddress(id, address) {
+    if (USE_MOCK) return mock.mockSetAddress(id, address);
     const response = await apiClient.put(`/checkout/v1/private/checkout/sessions/${id}/address`, address);
     return response.data;
 }
 
 /**
  * PUT /checkout/v1/private/checkout/sessions/:id/shipping
- * → shipping_set with the real fee (shipping GetQuote) and flat tax applied.
  */
 export async function setShipping(id, shippingMethod) {
+    if (USE_MOCK) return mock.mockSetShipping(id, shippingMethod);
     const response = await apiClient.put(`/checkout/v1/private/checkout/sessions/${id}/shipping`, {
         shipping_method: shippingMethod,
     });
@@ -53,9 +48,9 @@ export async function setShipping(id, shippingMethod) {
 
 /**
  * PUT /checkout/v1/private/checkout/sessions/:id/payment
- * → ready. Opaque tok_ references only; PAN-shaped input is rejected 400.
  */
 export async function setPayment(id, paymentMethodToken) {
+    if (USE_MOCK) return mock.mockSetPayment(id, paymentMethodToken);
     const response = await apiClient.put(`/checkout/v1/private/checkout/sessions/${id}/payment`, {
         payment_method_token: paymentMethodToken,
     });
@@ -64,11 +59,9 @@ export async function setPayment(id, paymentMethodToken) {
 
 /**
  * POST /checkout/v1/private/checkout/sessions/:id/confirm
- * The idempotent order handoff. The SAME key must be reused on every retry
- * of the same purchase attempt (double-click, flaky network, requote) —
- * that is what guarantees at most one order.
  */
 export async function confirmSession(id, idempotencyKey) {
+    if (USE_MOCK) return mock.mockConfirmSession(id, idempotencyKey);
     const response = await apiClient.post(
         `/checkout/v1/private/checkout/sessions/${id}/confirm`,
         null,
@@ -79,9 +72,9 @@ export async function confirmSession(id, idempotencyKey) {
 
 /**
  * POST /checkout/v1/private/checkout/sessions/:id/promo
- * Attaches a code (validated preview — a use is only counted at confirm).
  */
 export async function applyPromo(id, code) {
+    if (USE_MOCK) return mock.mockApplyPromo(id, code);
     const response = await apiClient.post(`/checkout/v1/private/checkout/sessions/${id}/promo`, { code });
     return response.data;
 }
@@ -90,6 +83,7 @@ export async function applyPromo(id, code) {
  * DELETE /checkout/v1/private/checkout/sessions/:id/promo
  */
 export async function removePromo(id) {
+    if (USE_MOCK) return mock.mockRemovePromo(id);
     const response = await apiClient.delete(`/checkout/v1/private/checkout/sessions/${id}/promo`);
     return response.data;
 }
@@ -98,6 +92,7 @@ export async function removePromo(id) {
  * DELETE /checkout/v1/private/checkout/sessions/:id
  */
 export async function cancelSession(id) {
+    if (USE_MOCK) return mock.mockCancelSession(id);
     const response = await apiClient.delete(`/checkout/v1/private/checkout/sessions/${id}`);
     return response.data;
 }
