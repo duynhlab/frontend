@@ -1,0 +1,45 @@
+name: Update Visual Baselines
+
+# Regenerates the CI-Linux-canonical screenshots for the visual projects and
+# uploads them as an artifact (commit them from a checkout after review).
+# macOS-rendered baselines always diff on Linux — never update from a Mac.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-baselines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-1.61.1
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerate visual baselines
+        run: npx playwright test --project=visual --project=visual-mobile --update-snapshots
+
+      - name: Upload baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: e2e/__screenshots__/
+          retention-days: 7
