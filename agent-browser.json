@@ -1,0 +1,7 @@
+{
+  "headed": false,
+  "hideScrollbars": true,
+  "contentBoundaries": true,
+  "maxOutput": 50000,
+  "idleTimeout": "10m"
+}

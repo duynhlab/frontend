@@ -34,12 +34,20 @@ yarn-error.log*
 coverage/
 e2e/.auth/
 playwright-report/
+playwright-report-*/
 test-results/
+test-results-*/
 
 # Cache
 .cache/
 .eslintcache
+*.tsbuildinfo
 
 # Local debugging artifacts (screenshots, scratch)
 debugs-local/
-dogfood-output/
+# Dogfood artifacts stay untracked (screenshots, snapshots, network dumps)
+# except the human-written cutover report.
+dogfood-output/*
+!dogfood-output/shadcn-cutover/
+dogfood-output/shadcn-cutover/*
+!dogfood-output/shadcn-cutover/report.md
