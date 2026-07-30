@@ -44,6 +44,8 @@ export function isAppError(value: unknown): value is AppError {
  * (security + UX).
  */
 const USER_FRIENDLY_MAP: Record<string, string> = {
+  // Login is by username in this product — reword the backend's copy.
+  "Invalid email or password": "Invalid username or password",
   "Internal server error": "Something went wrong. Please try again later.",
   "Authentication required": "Please log in to continue.",
   "Invalid or expired token": "Your session has expired. Please log in again.",
