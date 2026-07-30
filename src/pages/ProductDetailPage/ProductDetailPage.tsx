@@ -1,0 +1,296 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSWRConfig } from "swr";
+import PlaceholderImage from "@/components/common/PlaceholderImage";
+import { DetailSkeleton } from "@/components/common/Skeleton";
+import EmptyState from "@/components/common/EmptyState";
+import AppError from "@/components/common/AppError";
+import ApiDebug from "@/components/common/ApiDebug";
+import QuantitySelector from "@/features/products/QuantitySelector";
+import ReviewForm from "@/features/products/ReviewForm";
+import StarRating from "@/components/common/StarRating";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { notify } from "@/lib/notifications";
+import { toAppError } from "@/lib/errors";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { getProductDetails } from "@/api/productApi";
+import { addToCart } from "@/api/cartApi";
+import type { CartCount } from "@/api/types/cart";
+import type { Review } from "@/api/types/product";
+import { formatCurrency } from "@/lib/format";
+import { getStoredUser, isAuthenticated as hasStoredToken } from "@/auth/tokens";
+import type { StoredUser } from "@/api/types/auth";
+
+function formatReviewDate(review: Review): string {
+  if (!review.created_at) return "—";
+  const date = new Date(review.created_at);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function getInitial(name: string): string {
+  return (name || "G").trim().charAt(0).toUpperCase() || "G";
+}
+
+/**
+ * ProductDetailPage — uses the aggregation endpoint
+ * GET /product/v1/public/products/:id/details (product + stock + reviews in
+ * one call; no client-side orchestration).
+ */
+export default function ProductDetailPage() {
+  const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { mutate: globalMutate } = useSWRConfig();
+
+  const { data, loading, error, mutate } = useApiQuery(
+    ["product-details", id],
+    () => getProductDetails(id),
+  );
+
+  const reviews = useMemo(
+    () => (Array.isArray(data?.reviews) ? data.reviews : []),
+    [data],
+  );
+
+  const [quantity, setQuantity] = useState(1);
+  const [adding, setAdding] = useState(false);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState<StoredUser | null>(null);
+
+  useEffect(() => {
+    setIsAuthenticated(hasStoredToken());
+    setAuthUser(getStoredUser());
+  }, []);
+
+  const hasReviewed = useMemo(() => {
+    return (
+      isAuthenticated &&
+      !!authUser?.id &&
+      reviews.some((r) => String(r.user_id) === String(authUser.id))
+    );
+  }, [isAuthenticated, authUser, reviews]);
+
+  // Auto-scroll to reviews section when #reviews hash is present
+  useEffect(() => {
+    if (location.hash === "#reviews" && !loading) {
+      document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [location.hash, loading]);
+
+  const handleAddToCart = async () => {
+    if (!data?.product) return;
+    setAdding(true);
+    try {
+      await addToCart(id, data.product.name, data.product.price, quantity);
+      // Same dedup key on rapid clicks: the toast updates in place.
+      notify.success("Added to cart", { dedupKey: "cart-add" });
+      setQuantity(1);
+      // Bump the header badge instantly by the amount added, then reconcile.
+      void globalMutate(
+        "cart-count",
+        (prev: CartCount | undefined) => ({ count: (prev?.count ?? 0) + quantity }),
+        { revalidate: true },
+      );
+    } catch (err) {
+      notify.error(toAppError(err, "Cannot add item to cart").message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const averageRating = useMemo(() => {
+    return reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+  }, [reviews]);
+
+  const reviewsReturnTo = encodeURIComponent(`/products/${id}#reviews`);
+
+  return (
+    <div className="container mx-auto px-4 py-4">
+      <Link
+        to="/products"
+        className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground"
+      >
+        ← Back to Products
+      </Link>
+      <p className="mb-3 font-mono text-xs text-muted-foreground">
+        API: GET /product/v1/public/products/{id}/details
+      </p>
+
+      {loading && <DetailSkeleton />}
+
+      {!loading && error && (
+        <AppError
+          error={error}
+          endpoint={`GET /product/v1/public/products/${id}/details`}
+        />
+      )}
+
+      {!loading && !error && !data?.product && (
+        <EmptyState message="Product not found" icon="🔍" />
+      )}
+
+      {!loading && !error && data?.product && (
+        <>
+          <div className="mt-3 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="aspect-square bg-secondary">
+              <PlaceholderImage size="large" label="Product Image" />
+            </div>
+
+            <div className="space-y-3">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {data.product.name}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {data.product.description}
+              </p>
+              <p className="text-2xl font-semibold text-primary">
+                {formatCurrency(data.product.price)}
+              </p>
+
+              {data.stock && (
+                <p
+                  className={
+                    data.stock.available
+                      ? "text-sm text-success"
+                      : "text-sm text-destructive"
+                  }
+                >
+                  {data.stock.available
+                    ? `In Stock (${data.stock.quantity})`
+                    : "Out of Stock"}
+                </p>
+              )}
+
+              <QuantitySelector
+                quantity={quantity}
+                onChange={setQuantity}
+                min={1}
+                {...(data.stock?.available && { max: data.stock.quantity })}
+              />
+
+              <Button
+                size="lg"
+                onClick={() => void handleAddToCart()}
+                disabled={adding || !data.stock?.available}
+                aria-busy={adding}
+              >
+                {adding ? "Adding..." : "Add to Cart"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Reviews */}
+          <section id="reviews" className="mt-10">
+            <h2 className="text-lg font-semibold">Customer Reviews</h2>
+
+            {reviews.length > 0 ? (
+              <>
+                <div className="mt-3 flex items-center gap-4 rounded-lg border bg-card p-4">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold">
+                      {averageRating.toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground">/5</span>
+                  </div>
+                  <div className="space-y-1">
+                    <StarRating value={averageRating} />
+                    <p className="text-sm text-muted-foreground">
+                      {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="mt-4 space-y-4">
+                  {reviews.map((review) => (
+                    <li key={review.id} className="rounded-lg border bg-card p-4">
+                      <div className="flex items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="flex size-8 items-center justify-center rounded-full bg-secondary text-sm font-semibold"
+                        >
+                          {getInitial(review.username)}
+                        </span>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {review.username || "Guest"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatReviewDate(review)}
+                          </p>
+                        </div>
+                        <StarRating value={review.rating} />
+                      </div>
+                      {review.title && (
+                        <h4 className="mt-2 text-sm font-semibold">{review.title}</h4>
+                      )}
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {review.comment}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <div className="mt-3">
+                <EmptyState message="No reviews yet" icon="📝" />
+              </div>
+            )}
+
+            {/* Write a Review */}
+            <Separator className="my-6" />
+            <h3 className="text-base font-semibold">Write a Review</h3>
+            <div className="mt-3">
+              {!isAuthenticated ? (
+                <EmptyState
+                  icon="🔐"
+                  message="Please log in or sign up to write a review."
+                >
+                  <Button
+                    onClick={() =>
+                      void navigate(`/login?mode=login&returnTo=${reviewsReturnTo}`)
+                    }
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      void navigate(`/login?mode=register&returnTo=${reviewsReturnTo}`)
+                    }
+                  >
+                    Register
+                  </Button>
+                </EmptyState>
+              ) : hasReviewed ? (
+                <p className="text-sm text-muted-foreground">
+                  You have already reviewed this product.
+                </p>
+              ) : authUser ? (
+                <ReviewForm
+                  productId={id}
+                  userId={authUser.id}
+                  onSubmitted={() => mutate()}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  User not found. Please log in again.
+                </p>
+              )}
+            </div>
+          </section>
+        </>
+      )}
+
+      <ApiDebug data={{ product: data, reviews }} />
+    </div>
+  );
+}

@@ -3,7 +3,7 @@ export class ProductListPage {
     constructor(page) {
         this.page = page;
         this.heading = page.getByRole('heading', { name: 'Products' });
-        this.productCards = page.locator('.product-card');
+        this.productCards = page.getByRole('article');
         this.pagination = page.getByRole('navigation', { name: 'Product pagination' });
         this.nextPage = page.getByRole('button', { name: 'Go to next page' });
     }
