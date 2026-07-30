@@ -55,6 +55,9 @@ export default defineConfig({
         "smoke/**/*.spec.ts",
         "regression/navigation.spec.ts",
         "regression/toast.spec.ts",
+        // WCAG 2.5.8 spacing exemptions depend on the rendered width, so the
+        // touch-target gate has to run at mobile metrics too.
+        "regression/target-size.spec.ts",
       ],
     },
     {
