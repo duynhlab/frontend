@@ -132,3 +132,31 @@ layer; all comfortably inside "good" thresholds. No regression to investigate.
    silently overriding Tailwind utilities.
 6. Read-notification `opacity-70` pushed muted text below AA — replaced with
    an AA-safe muted-token treatment; caught by the after-run a11y gate.
+
+### Full-repo review gate (independent reviewer, all findings fixed)
+
+- Blocker: gateway smoke tests each ran in a fresh browser context, dropping
+  the login — now one shared page for the serial run.
+- Majors: logout no longer races LoginPage's auth check; the mock-store CI
+  sentinel was minified away (guard could never fail) — now a runtime store
+  field, verified present in mock builds / absent in production; gateway
+  failure traces (which embed the test-account login body) are no longer
+  uploaded as artifacts; auth/checkout Zod boundaries coerce numeric user ids
+  and tolerate omitted not-yet-set session keys.
+- Minors: raw unknown backend strings can no longer reach the UI, AppError
+  stops double-mapping friendly copy, the CI preview server gained a
+  readiness wait, and a mock handler's thrown expect became a clean 400.
+- Explicitly verified clean: axios 401/refresh/429 semantics vs main,
+  notification pacing, Idempotency-Key lifecycle, SWR keys/intervals,
+  mock↔e2e parity, config isolation, open-redirect guard, toast singleton.
+
+## Pre-cutover checklist (remaining)
+
+1. Run the gateway smoke against local-stack/staging Kong
+   (`gateway-smoke.yml` dispatch or `npm run test:e2e:gateway` with env) —
+   the ONE mandatory gate not yet executed. Verify there: the auth user-id
+   type and checkout session field shapes against the real services.
+2. Regenerate visual baselines on CI-Linux the first time the visual project
+   runs there (current baselines were captured on macOS).
+3. Confirm rollback: previous production image tag + deploy command
+   (frontend-only rollback is independent — backend/Kong unchanged).
