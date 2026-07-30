@@ -6,7 +6,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { useApiMutation } from '../../hooks/useApiMutation';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingState from '../../components/common/LoadingState';
-import ApiError from '../../components/common/ApiError';
+import ApiError from '@/components/common/AppError';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
 import './ProfilePage.css';

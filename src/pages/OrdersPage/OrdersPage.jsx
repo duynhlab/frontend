@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
 import { notify } from '@/lib/notifications';
 import PageHeader from '../../components/common/PageHeader';
-import Pagination from '../../components/common/Pagination';
+import Pagination from '@/components/common/AppPagination';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';

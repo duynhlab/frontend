@@ -1,10 +1,10 @@
 import { useTransition } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ProductGrid from '../../components/domain/ProductGrid';
-import Pagination from '../../components/common/Pagination';
+import Pagination from '@/components/common/AppPagination';
 import { GridSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
-import ApiError from '../../components/common/ApiError';
+import ApiError from '@/components/common/AppError';
 import { useProducts } from '../../hooks/useProducts';
 import './ProductListPage.css';
 

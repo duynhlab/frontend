@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 import PlaceholderImage from '../../components/common/PlaceholderImage';
 import { DetailSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
-import ApiError from '../../components/common/ApiError';
+import ApiError from '@/components/common/AppError';
 import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
 import StarRating from '../../components/common/StarRating';

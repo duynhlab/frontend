@@ -7,7 +7,7 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { notify } from '@/lib/notifications';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingState from '../../components/common/LoadingState';
-import ApiError from '../../components/common/ApiError';
+import ApiError from '@/components/common/AppError';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
 import './NotificationPage.css';
