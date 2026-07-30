@@ -63,7 +63,10 @@ function SheetContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
+                // top/right-4 aligns with the header's own p-4; `after:`
+                // widens the hit area to 28 + 16 = 44px without growing the
+                // rendered button.
+                className="absolute top-4 right-4 after:absolute after:-inset-2 after:content-['']"
                 size="icon-sm"
               />
             }
@@ -82,7 +85,7 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-header"
-      className={cn("flex flex-col gap-0.5 p-4", className)}
+      className={cn("flex flex-col gap-1 p-4", className)}
       {...props}
     />
   )
