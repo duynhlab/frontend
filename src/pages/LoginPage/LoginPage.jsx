@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, register } from '../../api/authApi';
 import { clearSession } from '../../auth/session';
 import { setTokens, isAuthenticated as hasStoredToken } from '../../auth/tokens';
-import { useToast } from '../../hooks/useToast';
+import { notify } from '@/lib/notifications';
 
 /**
  * Login Page - Auth APIs
@@ -17,7 +17,6 @@ import { useToast } from '../../hooks/useToast';
 export default function LoginPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { notify } = useToast();
 
     // Read query params. returnTo is attacker-influenceable (query string), so
     // allow only same-app absolute paths — reject "//host", "/\host" and
@@ -78,10 +77,10 @@ export default function LoginPage() {
             // other tabs. JWT-only — RFC-0009 Phase 5 removed the opaque token.
             setTokens(result);
 
-            notify('success', 'Welcome back');
+            notify.success('Welcome back');
             navigate(returnTo);
         } catch (err) {
-            notify('error', err.message || 'Invalid email or password');
+            notify.error(err.message || 'Invalid email or password');
             if (import.meta.env.DEV) {
                 // Log only diagnostics — the raw axios error carries the request
                 // body (err.config.data) which contains the plaintext password.

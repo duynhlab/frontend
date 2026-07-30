@@ -5,10 +5,9 @@ import {
     createSession, setAddress, setShipping, setPayment, applyPromo, removePromo,
     confirmSession, cancelSession, idempotencyKeyFor, clearIdempotencyKey,
 } from '../../api/checkoutApi';
-import { useToast } from '../../hooks/useToast';
-import { toUserFriendlyError } from '@/lib/errors';
+import { notify } from '@/lib/notifications';
+import { toAppError, toUserFriendlyError } from '@/lib/errors';
 import { formatCurrency } from '@/lib/format';
-import { parseApiError } from '../../utils/parseApiError';
 import { isAuthenticated as hasStoredToken } from '@/auth/tokens';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
@@ -36,7 +35,6 @@ const STEP_LABELS = ['Address', 'Shipping', 'Payment', 'Review'];
  */
 export default function CheckoutFlowPage() {
     const navigate = useNavigate();
-    const { notify, loading: toastLoading, dismiss: dismissToast, success: toastSuccess } = useToast();
     const { mutate: globalMutate, cache } = useSWRConfig();
 
     const [session, setSession] = useState(null);
@@ -64,9 +62,9 @@ export default function CheckoutFlowPage() {
             if (s.address) setAddressForm((prev) => ({ ...prev, ...s.address }));
             if (s.shipping_method) setShippingMethod(s.shipping_method);
         } catch (err) {
-            const { code, message } = parseApiError(err);
-            if (code === 'CONFLICT') setLoadError('empty-cart');
-            else setLoadError(toUserFriendlyError(message, code));
+            const appErr = toAppError(err);
+            if (appErr.code === 'CONFLICT') setLoadError('empty-cart');
+            else setLoadError(appErr.message);
         }
     }, []);
 
@@ -90,22 +88,20 @@ export default function CheckoutFlowPage() {
     // recreated; a requote (409 with a `session` body) re-renders the fresh
     // quote — the Idempotency-Key is NOT consumed and stays reusable.
     const handleFunnelError = (err) => {
-        const { code, message, session: requoted, status, isRateLimit } = parseApiError(err);
-        if (isRateLimit) {
-            notify('info', err.message);
+        const appErr = toAppError(err);
+        if (appErr.isRateLimit) {
+            notify.info(appErr.message);
             return;
         }
-        if (status === 410) {
-            notify('error', toUserFriendlyError(null, 'SESSION_EXPIRED'));
+        if (appErr.status === 410) {
+            notify.error(toUserFriendlyError(null, 'SESSION_EXPIRED'));
             bootSession();
             return;
         }
-        if (requoted) {
-            setSession(requoted);
-            notify('error', toUserFriendlyError(message, code));
-            return;
+        if (appErr.session) {
+            setSession(appErr.session);
         }
-        notify('error', toUserFriendlyError(message, code));
+        notify.error(appErr.message);
     };
 
     const run = (fn) => async (...args) => {
@@ -141,12 +137,12 @@ export default function CheckoutFlowPage() {
         try {
             const s = await applyPromo(session.id, code);
             setSession(s);
-            notify('success', 'Promo applied — totals updated.');
+            notify.success('Promo applied — totals updated.');
             return true;
         } catch (err) {
-            const { code: errCode, message, session: requoted } = parseApiError(err);
-            if (requoted) setSession(requoted);
-            setPromoError(toUserFriendlyError(message, errCode));
+            const appErr = toAppError(err);
+            if (appErr.session) setSession(appErr.session);
+            setPromoError(appErr.message);
             return false;
         } finally {
             setBusy(false);
@@ -159,18 +155,18 @@ export default function CheckoutFlowPage() {
 
     const submitConfirm = async () => {
         setBusy(true);
-        const toastId = toastLoading('Placing order...');
+        const toastId = notify.loading('Placing order...');
         try {
             const key = idempotencyKeyFor(session.id);
             const s = await confirmSession(session.id, key);
             setSession(s);
             clearIdempotencyKey(session.id);
-            dismissToast(toastId);
-            toastSuccess('Order placed successfully');
+            notify.dismiss(toastId);
+            notify.success('Order placed successfully');
             globalMutate('cart-count');
             globalMutate('cart');
         } catch (err) {
-            dismissToast(toastId);
+            notify.dismiss(toastId);
             handleFunnelError(err);
         } finally {
             setBusy(false);
@@ -181,7 +177,7 @@ export default function CheckoutFlowPage() {
         try {
             await cancelSession(session.id);
             clearIdempotencyKey(session.id);
-            notify('success', 'Checkout cancelled.');
+            notify.success('Checkout cancelled.');
             navigate('/cart');
         } catch (err) {
             handleFunnelError(err);

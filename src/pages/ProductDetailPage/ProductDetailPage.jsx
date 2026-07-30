@@ -8,7 +8,7 @@ import ApiError from '../../components/common/ApiError';
 import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
 import StarRating from '../../components/common/StarRating';
-import { useToast } from '../../hooks/useToast';
+import { notify } from '@/lib/notifications';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
@@ -43,7 +43,6 @@ export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { notify } = useToast();
     const { mutate: globalMutate } = useSWRConfig();
 
     // Product details via SWR aggregation endpoint (product + stock + reviews)
@@ -94,7 +93,7 @@ export default function ProductDetailPage() {
     const handleSubmitReview = async (e) => {
         e.preventDefault();
         if (!authUser?.id) {
-            notify('error', 'User not found. Please log in again.');
+            notify.error('User not found. Please log in again.');
             return;
         }
         setSubmittingReview(true);
@@ -109,7 +108,7 @@ export default function ProductDetailPage() {
             if (import.meta.env.DEV) {
                 console.log('[API] POST /reviews:', result);
             }
-            notify('success', 'Review submitted!');
+            notify.success('Review submitted!');
             setReviewForm({ rating: 5, title: '', comment: '' });
             // Refresh reviews list - try aggregation first, fallback to direct API
             await mutate();
@@ -119,11 +118,11 @@ export default function ProductDetailPage() {
                 (err.message && err.message.toLowerCase().includes('already exists'));
             
             if (isDuplicate) {
-                notify('info', 'You have already reviewed this product.');
+                notify.info('You have already reviewed this product.');
                 // Refresh reviews to update hasReviewed and hide the form
                 await mutate();
             } else {
-                notify('error', err.message || 'Failed to submit review');
+                notify.error(err.message || 'Failed to submit review');
             }
             if (import.meta.env.DEV) {
                 console.error('[API ERROR] Create review:', err);
@@ -145,12 +144,12 @@ export default function ProductDetailPage() {
             if (import.meta.env.DEV) {
                 console.log('[API] POST /cart:', result);
             }
-            notify('success', 'Added to cart', { id: 'cart-add' });
+            notify.success('Added to cart', { dedupKey: 'cart-add' });
             setQuantity(1);
             // Bump the header badge instantly by the amount added, then reconcile.
             globalMutate('cart-count', prev => ({ count: (prev?.count ?? 0) + quantity }), { revalidate: true });
         } catch (err) {
-            notify('error', err.message || 'Cannot add item to cart');
+            notify.error(err.message || 'Cannot add item to cart');
             if (import.meta.env.DEV) {
                 console.error('[API ERROR]:', err);
             }

@@ -5,14 +5,14 @@ import { toUserFriendlyError } from '@/lib/errors';
  * Displays user-friendly error messages (never raw backend errors).
  */
 export default function ApiError({ error, endpoint, onRetry }) {
-    // Accept both strings and Error objects (SWR/axios pass the object).
-    // A gateway rate-limit carries a calm, ready-to-show message — don't
-    // collapse it into the generic fallback.
-    const message = error?.isRateLimit
-        ? error.message
-        : toUserFriendlyError(typeof error === 'string' ? error : error?.message);
+    // Hooks pass a normalized AppError whose message is already
+    // user-friendly (rate-limit copy included); raw strings from legacy
+    // callers still go through the friendly mapping.
+    const message = typeof error === 'string'
+        ? toUserFriendlyError(error)
+        : (error?.message || toUserFriendlyError(null));
     return (
-        <div className="error-box">
+        <div className="error-box" role="alert">
             <strong>Error:</strong> {message}
             {endpoint && (
                 <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>

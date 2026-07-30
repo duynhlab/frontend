@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getOrderDetails } from '../../api/orderApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
-import { useToast } from '../../hooks/useToast';
+import { notify } from '@/lib/notifications';
 import PageHeader from '../../components/common/PageHeader';
 import Pagination from '../../components/common/Pagination';
 import LoadingState from '../../components/common/LoadingState';
@@ -20,7 +20,6 @@ import { formatCurrency } from '@/lib/format';
  */
 export default function OrdersPage() {
     const navigate = useNavigate();
-    const { notify } = useToast();
     const { isAuthenticated } = useAuth();
 
     // Selected order state (for details panel)
@@ -57,7 +56,7 @@ export default function OrdersPage() {
                 console.log('[API] GET /orders/' + orderId + '/details:', result);
             }
         } catch (err) {
-            notify('error', 'Cannot load orders');
+            notify.error('Cannot load orders');
             if (import.meta.env.DEV) {
                 console.error('[API ERROR]', err);
             }
@@ -114,7 +113,7 @@ export default function OrdersPage() {
 
             {/* Error */}
             {!loading && error && (
-                <div className="error">Error: {error}</div>
+                <div className="error" role="alert">Error: {error.message}</div>
             )}
 
             {/* Content */}

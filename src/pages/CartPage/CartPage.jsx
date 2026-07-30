@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
 import { useApiQuery } from '../../hooks/useApiQuery';
-import { useToast } from '../../hooks/useToast';
+import { notify } from '@/lib/notifications';
 import { formatCurrency } from '@/lib/format';
 import { isAuthenticated as hasStoredToken } from '@/auth/tokens';
 import ApiDebug from '../../components/common/ApiDebug';
@@ -16,7 +16,6 @@ import ApiDebug from '../../components/common/ApiDebug';
  */
 export default function CartPage() {
     const navigate = useNavigate();
-    const { notify } = useToast();
     const { mutate: globalMutate } = useSWRConfig();
     const [actionLoading, setActionLoading] = useState(null);
 
@@ -40,10 +39,10 @@ export default function CartPage() {
             const count = (updated?.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0);
             globalMutate('cart-count', { count }, { revalidate: true });
             if (successMessage) {
-                notify('success', successMessage);
+                notify.success(successMessage);
             }
         } catch (err) {
-            notify('error', err.message || errorMessage);
+            notify.error(err.message || errorMessage);
         } finally {
             setActionLoading(null);
         }
@@ -91,7 +90,7 @@ export default function CartPage() {
             {loading && <div className="loading">Loading cart...</div>}
 
             {/* Error */}
-            {!loading && error && <div className="error">Error: {error}</div>}
+            {!loading && error && <div className="error" role="alert">Error: {error.message}</div>}
 
             {/* Empty */}
             {!loading && !error && items.length === 0 && (

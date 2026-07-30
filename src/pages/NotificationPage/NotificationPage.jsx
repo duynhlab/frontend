@@ -4,7 +4,7 @@ import { useSWRConfig } from 'swr';
 import { getNotifications, markAsRead, markAllAsRead } from '../../api/notificationApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useApiQuery } from '../../hooks/useApiQuery';
-import { useToast } from '../../hooks/useToast';
+import { notify } from '@/lib/notifications';
 import PageHeader from '../../components/common/PageHeader';
 import LoadingState from '../../components/common/LoadingState';
 import ApiError from '../../components/common/ApiError';
@@ -35,7 +35,6 @@ export default function NotificationPage() {
         getNotifications
     );
 
-    const { notify } = useToast();
     // Cross-revalidate the header bell badge (a separate SWR key) so it updates
     // instantly after a mark, instead of waiting for its background poll.
     const { mutate: globalMutate } = useSWRConfig();
@@ -81,10 +80,10 @@ export default function NotificationPage() {
         try {
             await markOne(id);
             globalMutate('notification-count', prev => ({ count: Math.max(0, (prev?.count ?? 1) - 1) }), { revalidate: true });
-            notify('success', 'Marked as read');
+            notify.success('Marked as read');
         } catch (err) {
-            if (err?.isRateLimit) notify('warning', err.message);
-            else notify('error', 'Cannot update notification');
+            if (err?.isRateLimit) notify.warning(err.message);
+            else notify.error('Cannot update notification');
         } finally {
             mutate();
         }
@@ -101,10 +100,10 @@ export default function NotificationPage() {
         try {
             await markAllAsRead();
             globalMutate('notification-count', { count: 0 }, { revalidate: true });
-            notify('success', 'All notifications marked as read');
+            notify.success('All notifications marked as read');
         } catch (err) {
-            if (err?.isRateLimit) notify('warning', err.message);
-            else notify('error', 'Some notifications could not be marked as read');
+            if (err?.isRateLimit) notify.warning(err.message);
+            else notify.error('Some notifications could not be marked as read');
         } finally {
             setMarkingAll(false);
             mutate(); // revalidate list (reverts optimistic on failure)
