@@ -73,6 +73,11 @@ test.describe("axe scans (authenticated)", () => {
 
     const cart = new CartPage(page);
     await cart.goto();
+    // Let the transient toast expire first — behind the dialog overlay it is
+    // legitimately dimmed, which axe would (correctly) flag as low contrast.
+    await expect(toastWithText(page, "Added to cart")).toBeHidden({
+      timeout: 8_000,
+    });
     await cart.removeButton().click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
     await expectNoSeriousViolations(page);
