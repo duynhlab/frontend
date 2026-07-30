@@ -11,9 +11,15 @@ if [ -n "${leftovers}" ]; then
   exit 1
 fi
 
+# USAGE patterns only — prose that *prohibits* the package (AGENTS.md) and the
+# regression test asserting its DOM absence are legitimate mentions.
 echo "guard: react-hot-toast fully removed"
-if grep -rn "react-hot-toast\|HotToaster" src e2e package.json README.md AGENTS.md 2>/dev/null; then
-  echo "FAIL — react-hot-toast references remain" >&2
+if grep -rnE "from ['\"]react-hot-toast|require\(['\"]react-hot-toast|<HotToaster" src e2e 2>/dev/null; then
+  echo "FAIL — react-hot-toast is still imported" >&2
+  exit 1
+fi
+if grep -q '"react-hot-toast"[[:space:]]*:' package.json package-lock.json; then
+  echo "FAIL — react-hot-toast still declared in package(-lock).json" >&2
   exit 1
 fi
 if npm ls react-hot-toast >/dev/null 2>&1; then

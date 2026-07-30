@@ -1,76 +1,59 @@
 # Notifications Module
 
-This folder is a **placeholder** for future integration with the backend **notification microservice**.
+This folder is a **placeholder** for future integration with the backend
+**notification microservice**.
 
 ## Current State
 
-Toast notifications are triggered **locally** via the `useToast()` hook:
+Transient toasts are raised through the project notification API — a module
+singleton over the shadcn (Base UI) Toast, mounted once in `AppLayout`:
 
-```jsx
-import { useToast } from '../../hooks/useToast';
+```tsx
+import { notify } from "@/lib/notifications";
 
-function MyComponent() {
-    const { notify } = useToast();
+notify.success("Item added to cart");
+notify.error("Failed to save");
+notify.info("You already reviewed this product");
+notify.warning("You're doing that too fast");
 
-    notify('success', 'Item added to cart');
-    notify('error', 'Failed to save');
-    notify('info', 'You already reviewed this product');
-}
+// Loading → settled (one toast, no stacking):
+const id = notify.loading("Placing order...");
+notify.dismiss(id);
+notify.success("Order placed successfully");
+// …or let promise() drive the lifecycle:
+await notify.promise(saveThing(), {
+  loading: "Saving…",
+  success: "Saved",
+  error: (appError) => appError.message,
+});
+
+// Dedup: the same key updates the existing toast in place.
+notify.success("Added to cart", { dedupKey: "cart-add" });
+
+// Normalized error copy for any thrown value:
+notify.apiError(err, "Cannot add item to cart");
 ```
 
-Persistent notification history is rendered by `NotificationPage` and fetched from
-`notificationApi` — that is separate from local toasts.
+Rules (see `AGENTS.md`): exactly one `<Toaster />`; no second toast library;
+toast is for transient operation feedback — actionable form errors are inline.
+
+Persistent notification history is rendered by `NotificationPage` and fetched
+from `notificationApi` — that is separate from local toasts.
+
+## Related Files
+
+- `src/lib/notifications.ts` — the notification API (module singleton)
+- `src/components/ui/toast.tsx` — shadcn Toast primitive + `<Toaster />`
+- `src/components/layout/AppLayout.tsx` — the single `<Toaster />` mount
+- `src/pages/NotificationPage/` — backend notification history (not toasts)
 
 ## Future Integration
 
 To consume real-time notifications from the notification microservice:
 
-1. **Create a connector** (e.g., `notificationService.js`) that:
+1. **Create a connector** (e.g., `NotificationConnector.tsx`) that:
    - Opens a WebSocket / SSE connection to the notification service
    - Listens for incoming events
-   - Calls `notify(type, message)` for each event
-
-2. **Wire it at app root**:
-
-```jsx
-// Example: frontend/src/notifications/NotificationConnector.jsx
-import { useEffect } from 'react';
-import { useToast } from '../../hooks/useToast';
-
-export function NotificationConnector({ children }) {
-    const { notify } = useToast();
-
-    useEffect(() => {
-        const ws = new WebSocket('ws://notification-svc/subscribe');
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            notify(data.type || 'info', data.message);
-        };
-
-        return () => ws.close();
-    }, [notify]);
-
-    return children;
-}
-```
-
-## API Reference
-
-### `notify(type, message, options?)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `type` | `'success' \| 'error' \| 'info' \| 'warning'` | Notification severity |
-| `message` | `string` | Text to display |
-| `options.duration` | `number` | Auto-dismiss time in ms |
-
-### Extended helpers
-
-`useToast()` also exposes `success`, `error`, `info`, `warning`, `loading`, `dismiss`, `promise`, and `apiError`.
-
-## Related Files
-
-- `hooks/useToast.js` — react-hot-toast adapter
-- `App.jsx` — `<Toaster />` mount point
-- `pages/NotificationPage/` — backend notification history (not toasts)
+   - Calls `notify.*` for foreground events and revalidates the
+     `notifications` / `notification-count` SWR keys for the page and badge
+2. Mount the connector once inside `AppLayout` (only when authenticated).

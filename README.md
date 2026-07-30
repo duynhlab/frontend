@@ -61,33 +61,45 @@ unset.
 
 | Layer | Choice |
 |-------|--------|
-| UI | React 19, plain CSS (no component library) |
-| Build | Vite 8 |
-| Routing | React Router 7 |
+| UI | React 19, TypeScript (strict), Tailwind CSS v4, shadcn/ui (Base UI foundation), Lucide React |
+| Forms | React Hook Form + Zod (business forms and the auth/checkout API boundaries) |
+| Notifications | shadcn Toast behind `src/lib/notifications.ts` (single `<Toaster />`) |
+| Build | Vite 8 (`npm run build` typechecks first) |
+| Routing | React Router 7 (declarative SPA mode) |
 | HTTP | axios (shared client with auth interceptors) |
 | Server state | SWR |
-| Notifications | react-hot-toast |
+| E2E | Playwright (regression gate) + agent-browser (dogfood) |
 | Runtime | Node 24, npm only |
+| Production | static bundle served by Nginx; API via Kong |
 
 ## Project layout
 
 ```
 frontend/
 ├── src/
-│   ├── api/              # Axios client + one module per backend service
-│   │   ├── client.js     #   interceptors (auth header, 401 silent refresh)
-│   │   ├── config.js     #   gateway origin from VITE_API_BASE_URL
-│   │   └── mock/         #   in-memory store when VITE_USE_MOCK=true
-│   ├── auth/             # token storage, session logout
-│   ├── components/       # common/, domain/, layout/
-│   ├── hooks/            # useAuth, useProducts, useApiQuery, useApiMutation, useToast
-│   ├── pages/            # one folder per route
-│   ├── App.jsx           # routes and shell
-│   └── main.jsx
-├── e2e/                  # Playwright smoke tests (route mocks)
-├── Dockerfile            # multi-stage build → Nginx
-├── playwright.config.js
-└── vite.config.js
+│   ├── api/                # Axios client + one module per backend service
+│   │   ├── client.ts       #   interceptors (auth header, 401 silent refresh)
+│   │   ├── config.ts       #   gateway origin from VITE_API_BASE_URL
+│   │   ├── types/          #   request/response DTOs per service
+│   │   ├── schemas/        #   Zod schemas (auth + checkout boundaries only)
+│   │   └── mock/           #   in-memory store when VITE_USE_MOCK=true
+│   ├── auth/               # token storage (tokens.ts), session logout
+│   ├── components/
+│   │   ├── ui/             #   shadcn primitives (Base UI) — no business logic
+│   │   ├── common/         #   ConfirmAction, EmptyState, AppError, AppPagination, …
+│   │   └── layout/         #   AppLayout, AppHeader, MobileNavigation (Sheet)
+│   ├── features/           # business UI: auth/, products/, cart/, checkout/
+│   ├── hooks/              # useAuth, useProducts, useApiQuery, useApiMutation
+│   ├── lib/                # notifications.ts, errors.ts, forms.ts, format.ts, utils.ts
+│   ├── pages/              # route-level screens (compose only)
+│   ├── App.tsx             # routes
+│   └── main.tsx
+├── e2e/                    # Playwright: smoke/, regression/, mock-mode/, gateway/
+├── scripts/agent-browser/  # dogfood orchestration (smoke / a11y / visual)
+├── components.json         # shadcn foundation lock — do not hand-edit
+├── playwright.config.ts    # + playwright.mock-mode.config.ts, playwright.gateway.config.ts
+├── Dockerfile              # multi-stage build → Nginx
+└── vite.config.ts          # refuses production builds with VITE_USE_MOCK=true
 ```
 
 Routes: `/` (home), `/products`, `/products/:id`, `/cart`, `/checkout`, `/orders`,
@@ -97,7 +109,7 @@ Routes: `/` (home), `/products`, `/products/:id`, `/cart`, `/checkout`, `/orders
 
 ### Prerequisites
 
-- Node.js 24
+- Node.js 24+
 - npm (lockfile is `package-lock.json`; CI uses `npm ci`)
 
 ### Scripts
@@ -107,8 +119,12 @@ npm install          # install dependencies
 npm run dev          # Vite dev server with hot reload
 npm run build        # production bundle → dist/
 npm run preview      # serve the built bundle locally
-npm run lint         # ESLint
-npm run test:e2e     # Playwright E2E (mocked APIs, no gateway)
+npm run lint         # ESLint (src + e2e + configs)
+npm run typecheck    # tsc, all projects (src, node configs, e2e)
+npm run test:e2e     # Playwright regression (app mock OFF, route mocks ON)
+npm run test:e2e:mock-mode  # mock-mode smoke (app mock ON, no route mocks)
+npm run test:e2e:gateway    # gateway smoke (no mocks; needs E2E_BASE_URL + E2E_GATEWAY_URL)
+npm run test:agent:cutover  # agent-browser dogfood (smoke + a11y + visual)
 npm run test:e2e:ui  # Playwright UI mode
 npm run test:e2e:headed
 npm run test:e2e:report
@@ -179,12 +195,32 @@ Authoritative references:
 
 ## Testing
 
-End-to-end tests live in `e2e/` and use Playwright with `page.route()` mocks — no live
-gateway is required. `playwright.config.js` starts Vite via `webServer` and sets
-`VITE_USE_MOCK=false` so HTTP is intercepted at the network layer rather than by the
-in-app mock store.
+Three Playwright suites with strictly separated mock policies (see `AGENTS.md`):
 
-CI runs lint, build, and E2E on every pull request (`.github/workflows/check.yml`).
+| Suite | Command | App mock | Route mocks | Purpose |
+|---|---|---|---|---|
+| Regression (`e2e/smoke`, `e2e/regression`) | `npm run test:e2e` | OFF | ON | Deterministic merge gate: axios, interceptors, auth refresh and Kong path shapes are really exercised and asserted (network contract fails a test whose expected request never fires) |
+| Mock-mode smoke (`e2e/mock-mode`) | `npm run test:e2e:mock-mode` | ON | none | Protects local/offline development; fails on any request leaving the app origin |
+| Gateway smoke (`e2e/gateway`) | `npm run test:e2e:gateway` | OFF | none | Real Kong integration (CORS, paths, auth, checkout). Mandatory before a production cutover; dispatch-only workflow until an environment is available |
+
+Notes:
+
+- The regression server runs on port 3000 and the mock-mode server on port 3100, both
+  with `--strictPort` and no server reuse — stop your own `npm run dev` before running
+  suites locally (Vite reads env at process start; a stale server silently lies).
+- Visual snapshots under `e2e/__screenshots__/` are CI-Linux-canonical; update them via
+  CI or the Playwright Docker image, never from macOS.
+- `agent-browser` powers exploratory dogfooding (`npm run test:agent:*`): accessibility
+  audits gate on zero critical/serious violations, journeys fail on console/runtime
+  errors, and artifacts land in `dogfood-output/` (untracked except the cutover
+  report). It needs the app already running (mock mode recommended) and never uses
+  production credentials. Regressions it finds must be converted into Playwright tests.
+- A production build with `VITE_USE_MOCK=true` fails by design, and CI verifies both
+  that refusal and that the mock store never reaches production assets.
+
+CI runs lint, typecheck, build + migration guards, the regression suite, and the
+mock-mode smoke on every pull request (`.github/workflows/check.yml`); the gateway
+smoke has its own dispatch workflow (`gateway-smoke.yml`).
 
 ## Docker
 
