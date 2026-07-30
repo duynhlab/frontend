@@ -6,9 +6,10 @@ import {
     confirmSession, cancelSession, idempotencyKeyFor, clearIdempotencyKey,
 } from '../../api/checkoutApi';
 import { useToast } from '../../hooks/useToast';
-import { toUserFriendlyError } from '../../utils/errorMessages';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { toUserFriendlyError } from '@/lib/errors';
+import { formatCurrency } from '@/lib/format';
 import { parseApiError } from '../../utils/parseApiError';
+import { isAuthenticated as hasStoredToken } from '@/auth/tokens';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
@@ -52,7 +53,7 @@ export default function CheckoutFlowPage() {
     const [promoError, setPromoError] = useState(null);
     const headingRef = useRef(null);
 
-    const isAuthenticated = !!localStorage.getItem('authToken');
+    const isAuthenticated = hasStoredToken();
 
     const bootSession = useCallback(async () => {
         setLoadError(null);

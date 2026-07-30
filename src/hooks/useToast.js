@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 import { parseApiError } from '../utils/parseApiError';
-import { toUserFriendlyError } from '../utils/errorMessages';
+import { toUserFriendlyError } from '@/lib/errors';
 
 /**
  * Maps API/Kong errors to user-friendly toast copy.

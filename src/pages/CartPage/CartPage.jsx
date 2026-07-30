@@ -4,7 +4,8 @@ import { useSWRConfig } from 'swr';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useToast } from '../../hooks/useToast';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { formatCurrency } from '@/lib/format';
+import { isAuthenticated as hasStoredToken } from '@/auth/tokens';
 import ApiDebug from '../../components/common/ApiDebug';
 
 /**
@@ -20,7 +21,7 @@ export default function CartPage() {
     const [actionLoading, setActionLoading] = useState(null);
 
     // Check authentication
-    const isAuthenticated = !!localStorage.getItem('authToken');
+    const isAuthenticated = hasStoredToken();
 
     // Server state via SWR (shares the 'cart' key with Checkout)
     const { data: cart, loading, error, mutate } = useApiQuery(

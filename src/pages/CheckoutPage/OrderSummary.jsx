@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { formatCurrency } from '@/lib/format';
 
 /**
  * Live quote panel: per-item rows (with price-changed badges), the totals

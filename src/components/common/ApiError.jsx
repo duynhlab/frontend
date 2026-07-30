@@ -1,4 +1,4 @@
-import { toUserFriendlyError } from '../../utils/errorMessages';
+import { toUserFriendlyError } from '@/lib/errors';
 
 /**
  * ApiError Component

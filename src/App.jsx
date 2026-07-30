@@ -8,6 +8,7 @@ import Footer from './components/common/Footer';
 import { GridSkeleton } from './components/common/Skeleton';
 import ProtectedRoute from './components/ProtectedRoute';
 import { clearSession } from './auth/session';
+import { isAuthenticated as hasStoredToken } from './auth/tokens';
 
 // Code splitting: Lazy load pages for better initial bundle size
 const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
@@ -58,8 +59,7 @@ function App() {
     const notificationCount = notificationData?.count || 0;
 
     const checkAuth = () => {
-        const token = localStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
+        setIsAuthenticated(hasStoredToken());
     };
 
     const handleLogout = async () => {

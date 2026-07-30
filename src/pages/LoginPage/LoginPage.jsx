@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login, register } from '../../api/authApi';
 import { clearSession } from '../../auth/session';
-import { setTokens } from '../../auth/tokens';
+import { setTokens, isAuthenticated as hasStoredToken } from '../../auth/tokens';
 import { useToast } from '../../hooks/useToast';
 
 /**
@@ -38,8 +38,7 @@ export default function LoginPage() {
 
     // Check if user is already authenticated
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
+        setIsAuthenticated(hasStoredToken());
     }, []);
 
     // Update mode when query param changes

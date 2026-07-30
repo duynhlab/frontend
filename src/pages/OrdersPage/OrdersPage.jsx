@@ -9,7 +9,7 @@ import Pagination from '../../components/common/Pagination';
 import LoadingState from '../../components/common/LoadingState';
 import EmptyState from '../../components/common/EmptyState';
 import ApiDebug from '../../components/common/ApiDebug';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { formatCurrency } from '@/lib/format';
 
 /**
  * Orders Page - List and view orders with shipping tracking

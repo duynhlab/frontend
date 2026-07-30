@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { isAuthenticated } from '@/auth/tokens';
 
 /**
  * ProtectedRoute redirects unauthenticated users to /login, preserving the
@@ -9,9 +10,8 @@ import { Navigate, useLocation } from 'react-router-dom';
  */
 export default function ProtectedRoute({ children }) {
     const location = useLocation();
-    const token = localStorage.getItem('authToken');
 
-    if (!token) {
+    if (!isAuthenticated()) {
         const returnTo = encodeURIComponent(location.pathname + location.search);
         return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
     }

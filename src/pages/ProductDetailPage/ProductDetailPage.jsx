@@ -13,7 +13,8 @@ import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
 import { createReview } from '../../api/reviewApi';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { formatCurrency } from '@/lib/format';
+import { isAuthenticated as hasStoredToken, getStoredUser } from '@/auth/tokens';
 
 // Helper functions moved outside component to avoid recreation on every render
 function formatReviewDate(review) {
@@ -65,14 +66,8 @@ export default function ProductDetailPage() {
     const [authUser, setAuthUser] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
-        try {
-            const stored = localStorage.getItem('authUser');
-            setAuthUser(stored ? JSON.parse(stored) : null);
-        } catch {
-            setAuthUser(null);
-        }
+        setIsAuthenticated(hasStoredToken());
+        setAuthUser(getStoredUser());
     }, []);
 
     // Review form state

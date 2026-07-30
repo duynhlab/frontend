@@ -1,5 +1,5 @@
-import { logout as logoutApi } from '../api/authApi';
-import { getRefreshToken, clearTokens } from './tokens';
+import { logout as logoutApi } from "@/api/authApi";
+import { clearTokens, getRefreshToken } from "./tokens";
 
 /**
  * clearSession revokes the refresh-token family server-side (best-effort) and
@@ -12,17 +12,17 @@ import { getRefreshToken, clearTokens } from './tokens';
  * injected script (XSS). Migrating to an httpOnly cookie issued by auth-service
  * is tracked as a follow-up (the auth service + gateway must set/forward it).
  */
-export async function clearSession() {
-    const refreshToken = getRefreshToken();
-    if (refreshToken) {
-        try {
-            await logoutApi(refreshToken);
-        } catch {
-            // Best-effort: revocation may fail (family already revoked, offline).
-            // We still clear local state so the user is logged out client-side.
-        }
+export async function clearSession(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    try {
+      await logoutApi(refreshToken);
+    } catch {
+      // Best-effort: revocation may fail (family already revoked, offline).
+      // We still clear local state so the user is logged out client-side.
     }
-    clearTokens();
+  }
+  clearTokens();
 }
 
 export default clearSession;

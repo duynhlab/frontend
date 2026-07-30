@@ -1,49 +1,35 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { clearSession } from '../auth/session';
+import { getAccessToken, getStoredUser } from '../auth/tokens';
 
 /**
  * useAuth Hook
  * Centralized authentication state management
- * 
- * Best practice: js-cache-storage - read localStorage once per render
- * 
+ *
+ * Reads localStorage once per change through the tokens.ts helpers (single
+ * source of truth for storage keys and user parsing).
+ *
  * Usage:
  *   const { isAuthenticated, user, token, logout, requireAuth } = useAuth();
- *   
+ *
  *   // Guard a page
  *   useEffect(() => {
  *     requireAuth(navigate, '/checkout');
  *   }, [requireAuth, navigate]);
  */
+function readAuthState() {
+    return { token: getAccessToken(), user: getStoredUser() };
+}
+
 export function useAuth() {
     // Read localStorage once on mount, cache in state
-    const [authState, setAuthState] = useState(() => {
-        const token = localStorage.getItem('authToken');
-        let user = null;
-        try {
-            const stored = localStorage.getItem('authUser');
-            user = stored ? JSON.parse(stored) : null;
-        } catch {
-            user = null;
-        }
-        return { token, user };
-    });
+    const [authState, setAuthState] = useState(readAuthState);
 
     const isAuthenticated = useMemo(() => !!authState.token, [authState.token]);
 
     // Listen for storage changes (login/logout in other tabs)
     useEffect(() => {
-        const handleStorage = () => {
-            const token = localStorage.getItem('authToken');
-            let user = null;
-            try {
-                const stored = localStorage.getItem('authUser');
-                user = stored ? JSON.parse(stored) : null;
-            } catch {
-                user = null;
-            }
-            setAuthState({ token, user });
-        };
+        const handleStorage = () => setAuthState(readAuthState());
 
         window.addEventListener('storage', handleStorage);
         window.addEventListener('auth-change', handleStorage);
@@ -62,15 +48,7 @@ export function useAuth() {
 
     // Refresh auth state (call after login)
     const refreshAuth = useCallback(() => {
-        const token = localStorage.getItem('authToken');
-        let user = null;
-        try {
-            const stored = localStorage.getItem('authUser');
-            user = stored ? JSON.parse(stored) : null;
-        } catch {
-            user = null;
-        }
-        setAuthState({ token, user });
+        setAuthState(readAuthState());
     }, []);
 
     /**

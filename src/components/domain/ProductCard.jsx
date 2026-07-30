@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../common/PlaceholderImage';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { formatCurrency } from '@/lib/format';
 
 /**
  * ProductCard Component
