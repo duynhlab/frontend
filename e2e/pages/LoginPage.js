@@ -2,9 +2,9 @@ export class LoginPage {
     /** @param {import('@playwright/test').Page} page */
     constructor(page) {
         this.page = page;
-        this.usernameInput = page.getByPlaceholder('alice');
-        this.passwordInput = page.locator('.auth-form input[type="password"]');
-        this.submitButton = page.getByRole('button', { name: 'Login' });
+        this.usernameInput = page.getByLabel('Username');
+        this.passwordInput = page.getByLabel('Password');
+        this.submitButton = page.getByRole('button', { name: 'Login', exact: true });
     }
 
     async goto() {

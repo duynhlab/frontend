@@ -75,9 +75,9 @@ export function setTokens({
   refresh_token: refreshToken,
   user,
 }: {
-  access_token?: string;
-  refresh_token?: string;
-  user?: StoredUser;
+  access_token?: string | undefined;
+  refresh_token?: string | undefined;
+  user?: StoredUser | undefined;
 }): void {
   if (accessToken) {
     localStorage.setItem(ACCESS_KEY, accessToken);

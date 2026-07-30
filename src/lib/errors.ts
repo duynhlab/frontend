@@ -19,6 +19,12 @@ export interface AppError {
   isNetwork: boolean;
   /** Refreshed checkout session attached to confirm-requote 409 responses. */
   session: CheckoutSession | undefined;
+  /**
+   * Per-field validation messages when the backend provides them (the
+   * RespondError envelope today carries a single string, so this is usually
+   * undefined — forms then surface the message as a root alert).
+   */
+  fieldErrors: Record<string, string> | undefined;
   /** Original error, for logging/debugging only. */
   cause: unknown;
 }
@@ -212,6 +218,7 @@ export function toAppError(
     isRateLimit,
     isNetwork,
     session: parsed.session,
+    fieldErrors: undefined,
     cause: error,
   };
   Object.defineProperty(appError, APP_ERROR_MARKER, { value: true });

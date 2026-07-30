@@ -177,7 +177,9 @@ function FieldError({
   errors,
   ...props
 }: React.ComponentProps<"div"> & {
-  errors?: Array<{ message?: string } | undefined>
+  // Deliberate edit: `| undefined` so callers can pass a conditional value
+  // under exactOptionalPropertyTypes (see tsconfig.app.json).
+  errors?: Array<{ message?: string } | undefined> | undefined
 }) {
   const content = useMemo(() => {
     if (children) {
