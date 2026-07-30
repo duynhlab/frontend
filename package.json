@@ -18,7 +18,8 @@
     "test:agent:smoke": "bash scripts/agent-browser/cutover-smoke.sh",
     "test:agent:a11y": "bash scripts/agent-browser/cutover-a11y.sh",
     "test:agent:visual": "bash scripts/agent-browser/cutover-visual.sh",
-    "test:agent:cutover": "npm run test:agent:smoke && npm run test:agent:a11y && npm run test:agent:visual"
+    "test:agent:cutover": "npm run test:agent:smoke && npm run test:agent:a11y && npm run test:agent:visual",
+    "measure:density": "node scripts/density/measure.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
