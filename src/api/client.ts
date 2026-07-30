@@ -107,12 +107,16 @@ async function doRefresh(staleAccessToken: string | null): Promise<string> {
 
 function refreshTokens(staleAccessToken: string | null): Promise<string> {
   if (!refreshInFlight) {
-    const run = (): Promise<string> =>
-      navigator.locks?.request
-        ? (navigator.locks.request("auth-refresh", () =>
-            doRefresh(staleAccessToken),
-          ) as Promise<string>)
-        : doRefresh(staleAccessToken); // very old browsers: in-tab guard only
+    const run = async (): Promise<string> => {
+      if (!navigator.locks?.request) {
+        return doRefresh(staleAccessToken); // very old browsers: in-tab guard only
+      }
+      let token = "";
+      await navigator.locks.request("auth-refresh", async () => {
+        token = await doRefresh(staleAccessToken);
+      });
+      return token;
+    };
     refreshInFlight = run().finally(() => {
       refreshInFlight = null;
     });

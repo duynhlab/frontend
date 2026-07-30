@@ -107,11 +107,17 @@ export default function CheckoutFlowPage() {
     }
   }, []);
 
+  // POST /sessions is not idempotent — guard the boot effect so StrictMode's
+  // dev double-invocation (and any dep-triggered re-run) can't create two
+  // sessions for one mounted funnel.
+  const bootedRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated) {
       void navigate("/login?returnTo=/checkout");
       return;
     }
+    if (bootedRef.current) return;
+    bootedRef.current = true;
     void bootSession();
   }, [isAuthenticated, navigate, bootSession]);
 

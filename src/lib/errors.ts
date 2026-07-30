@@ -101,11 +101,16 @@ export function toUserFriendlyError(
   code?: string | null,
 ): string {
   if (code && CODE_MAP[code]) return CODE_MAP[code];
-  if (!rawError || typeof rawError !== "string") return GENERIC_MESSAGE;
+  return mapKnownMessage(rawError) ?? GENERIC_MESSAGE;
+}
+
+/** Known-message mapping WITHOUT the generic collapse (null = no mapping). */
+function mapKnownMessage(rawError: string | null | undefined): string | null {
+  if (!rawError || typeof rawError !== "string") return null;
   const trimmed = rawError.trim();
   return (
     USER_FRIENDLY_MAP[trimmed] ??
-    (PASSTHROUGH_MESSAGES.has(trimmed) ? trimmed : GENERIC_MESSAGE)
+    (PASSTHROUGH_MESSAGES.has(trimmed) ? trimmed : null)
   );
 }
 
@@ -220,7 +225,10 @@ export function toAppError(
   } else if (isNetwork) {
     message = "Cannot reach server";
   } else {
+    // A known backend message maps to its curated copy first; only then the
+    // HTTP-status fallback; raw unknown messages pass through last.
     message =
+      mapKnownMessage(parsed.message) ??
       statusFallback(parsed.status) ??
       parsed.message ??
       (error instanceof Error && error.message ? error.message : fallback);
