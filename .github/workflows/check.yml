@@ -153,7 +153,13 @@ jobs:
         run: npx vite build --mode dogfood
 
       - name: Serve preview
-        run: npx vite preview --port 4173 --strictPort &
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:4173/ >/dev/null && break
+            sleep 1
+          done
+          curl -fsS http://localhost:4173/ >/dev/null
 
       - name: Run agent-browser cutover checks
         run: BASE_URL=http://localhost:4173 LABEL=ci npm run test:agent:cutover

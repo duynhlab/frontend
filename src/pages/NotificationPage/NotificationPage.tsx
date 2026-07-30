@@ -53,16 +53,18 @@ function NotificationItem({
   action?: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-start justify-between gap-3 border-b py-3 last:border-b-0",
-        notification.read && "opacity-70",
-      )}
-    >
+    <div className="flex items-start justify-between gap-3 border-b py-3 last:border-b-0">
       <div>
         <div className="flex items-center gap-2">
           <span aria-hidden="true">{getNotificationIcon(notification.type)}</span>
-          <h4 className="text-sm font-medium">
+          {/* Read items de-emphasize via the muted TOKEN (kept at AA) — an
+              opacity fade would push muted text below the contrast floor. */}
+          <h4
+            className={cn(
+              "text-sm font-medium",
+              notification.read && "text-muted-foreground",
+            )}
+          >
             {notification.title || notification.message}
           </h4>
         </div>

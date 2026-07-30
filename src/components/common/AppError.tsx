@@ -15,9 +15,12 @@ interface AppErrorProps {
  * The hooks pass a normalized AppError whose message is already user-friendly.
  */
 export default function AppError({ error, endpoint, onRetry }: AppErrorProps) {
+  // Strings reaching this component are already user-facing app copy (every
+  // API failure is normalized by toAppError upstream) — show them verbatim
+  // instead of collapsing unknown-but-friendly copy into the generic message.
   const message =
     typeof error === "string"
-      ? toUserFriendlyError(error)
+      ? error
       : error?.message || toUserFriendlyError(null);
 
   return (

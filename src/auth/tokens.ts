@@ -34,13 +34,19 @@ export function getStoredUser(): StoredUser | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const candidate = parsed as { id?: unknown; username?: unknown; email?: unknown };
+    // Numeric ids exist in parts of the platform (and in pre-cutover storage)
+    // — coerce instead of rejecting the whole stored identity.
     if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      typeof (parsed as StoredUser).id === "string" &&
-      typeof (parsed as StoredUser).username === "string"
+      (typeof candidate.id === "string" || typeof candidate.id === "number") &&
+      typeof candidate.username === "string"
     ) {
-      return parsed as StoredUser;
+      return {
+        id: String(candidate.id),
+        username: candidate.username,
+        email: typeof candidate.email === "string" ? candidate.email : "",
+      };
     }
     return null;
   } catch {

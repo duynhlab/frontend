@@ -34,9 +34,10 @@ export const checkoutSessionSchema = z.object({
   tax: z.number(),
   discount: z.number().default(0),
   total: z.number(),
-  address: checkoutAddressSchema.nullable(),
-  shipping_method: z.enum(["standard", "express"]).nullable(),
-  promo_code: z.string().nullable(),
+  // Tolerant of the service omitting not-yet-set keys entirely (missing ⇒ null).
+  address: checkoutAddressSchema.nullable().default(null),
+  shipping_method: z.enum(["standard", "express"]).nullable().default(null),
+  promo_code: z.string().nullable().default(null),
   order_id: z.string().optional(),
 }) satisfies z.ZodType<CheckoutSession, unknown>;
 

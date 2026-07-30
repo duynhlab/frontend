@@ -22,6 +22,9 @@ import {
 export const MOCK_STORE_SENTINEL = "__APP_MOCK_STORE__";
 
 export interface MockStore {
+  /** Runtime reference to the sentinel so the literal survives minification
+   * exactly when this module is bundled (the CI dist-grep depends on it). */
+  sentinel: string;
   products: Product[];
   cartItems: CartItem[];
   notifications: AppNotification[];
@@ -41,6 +44,7 @@ export function nextId(prefix: string): string {
 function createStore(): MockStore {
   seq = 1000;
   return {
+    sentinel: MOCK_STORE_SENTINEL,
     products: seedProductCatalog(),
     cartItems: [],
     notifications: SEED_NOTIFICATIONS.map((n) => ({ ...n })),

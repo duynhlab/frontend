@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+
 import type { AddCartItemRequest } from "@/api/types/cart";
 import { apiError, json, type ApiHandler } from "../server";
 import { buildCartEnvelope } from "../state";
@@ -23,10 +23,17 @@ export const cartHandlers: ApiHandler[] = [
     path: /\/cart\/v1\/private\/cart$/,
     fulfill: ({ route, request, state }) => {
       const body = request.postDataJSON() as AddCartItemRequest;
-      // The mock layer asserts the request contract — a malformed body must
-      // fail the test, not silently succeed.
-      expect(body.product_id, "cart add requires product_id").toBeTruthy();
-      expect(body.quantity, "cart add requires a positive quantity").toBeGreaterThan(0);
+      // Contract check via a clean 400 (a thrown expect() here would strand
+      // the request and surface as an opaque timeout instead): the UI then
+      // errors and the test's success assertions fail with real context.
+      if (!body.product_id || !(body.quantity > 0)) {
+        return apiError(
+          route,
+          "malformed add-to-cart body (product_id + positive quantity required)",
+          400,
+          "BAD_REQUEST",
+        );
+      }
 
       const existing = state.cartItems.find(
         (i) => i.product_id === body.product_id,

@@ -11,12 +11,14 @@ export const authTokensResponseSchema = z.object({
   refresh_token: z.string().min(1),
   user: z
     .object({
-      id: z.string().min(1),
+      // Coerced: parts of the platform have historically used numeric ids
+      // (the legacy UI String()-coerced them everywhere).
+      id: z.coerce.string<string>().min(1),
       username: z.string().min(1),
       email: z.string(),
     })
     .optional(),
-}) satisfies z.ZodType<AuthTokensResponse>;
+}) satisfies z.ZodType<AuthTokensResponse, unknown>;
 
 export function parseAuthTokensResponse(data: unknown): AuthTokensResponse {
   return authTokensResponseSchema.parse(data);

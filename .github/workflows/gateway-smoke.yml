@@ -58,12 +58,13 @@ jobs:
           E2E_GATEWAY_PASSWORD: ${{ secrets.E2E_GATEWAY_PASSWORD }}
         run: npm run test:e2e:gateway
 
+      # test-results-gateway/ is NOT uploaded: failure traces there embed the
+      # login request body (the test account password). Inspect them on the
+      # runner or rerun locally instead.
       - name: Upload report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: gateway-smoke-report
-          path: |
-            playwright-report-gateway/
-            test-results-gateway/
+          path: playwright-report-gateway/
           retention-days: 14

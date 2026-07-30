@@ -227,13 +227,13 @@ export function toAppError(
   } else if (isNetwork) {
     message = "Cannot reach server";
   } else {
-    // A known backend message maps to its curated copy first; only then the
-    // HTTP-status fallback; raw unknown messages pass through last.
+    // Known backend messages map to curated copy; then the HTTP-status
+    // fallback; otherwise the caller's fallback. Unknown raw backend strings
+    // are NEVER shown verbatim (security + UX policy of this module).
     message =
       mapKnownMessage(parsed.message) ??
       statusFallback(parsed.status) ??
-      parsed.message ??
-      (error instanceof Error && error.message ? error.message : fallback);
+      fallback;
   }
 
   const appError: AppError = {

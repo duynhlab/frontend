@@ -7,6 +7,10 @@ import { expect, test, type Page, type Request } from "@playwright/test";
  * route fulfillment (lint-enforced): the network layer is observed, never
  * altered. Mandatory before production cutover.
  *
+ * The whole suite shares ONE page/context (beforeAll below): Playwright
+ * normally isolates each test in a fresh context, which would drop the login
+ * performed earlier in the funnel — state continuity here is the point.
+ *
  * Env contract (see playwright.gateway.config.ts): E2E_BASE_URL,
  * E2E_GATEWAY_URL, E2E_GATEWAY_USERNAME/PASSWORD (dedicated test account —
  * NEVER production credentials), optional E2E_GATEWAY_CHECKOUT=submit.
@@ -16,8 +20,9 @@ test.describe.configure({ mode: "serial" });
 const GATEWAY_URL = process.env.E2E_GATEWAY_URL as string;
 const USERNAME = process.env.E2E_GATEWAY_USERNAME ?? "";
 const PASSWORD = process.env.E2E_GATEWAY_PASSWORD ?? "";
+const HAS_CREDS = Boolean(USERNAME && PASSWORD);
 const CHECKOUT_MODE = process.env.E2E_GATEWAY_CHECKOUT === "submit" ? "submit" : "readonly";
-/** Identifies this run's data (e.g. profile suffix) for later cleanup. */
+/** Identifies this run's data (e.g. address name) for later cleanup. */
 const RUN_ID = `e2e-${process.env.GITHUB_RUN_ID ?? process.pid}`;
 
 interface ObservedCall {
@@ -66,9 +71,16 @@ class GatewayObserver {
 }
 
 const observer = new GatewayObserver();
+let page: Page;
 
-test.beforeEach(({ page }) => {
+test.beforeAll(async ({ browser }) => {
+  // One context for the entire serial run — auth state carries across tests.
+  page = await browser.newPage();
   observer.attach(page);
+});
+
+test.afterAll(async () => {
+  await page?.close();
 });
 
 test("CORS preflight allows the app origin on a private mutating route", async ({
@@ -90,13 +102,13 @@ test("CORS preflight allows the app origin on a private mutating route", async (
   await api.dispose();
 });
 
-test("app really starts against the gateway (no mock mode)", async ({ page }) => {
+test("app really starts against the gateway (no mock mode)", async () => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-api-mode", "http");
 });
 
-test("login stores a rotating token pair and private calls carry it", async ({ page }) => {
-  test.skip(!USERNAME || !PASSWORD, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
+test("login stores a rotating token pair and private calls carry it", async () => {
+  test.skip(!HAS_CREDS, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
 
   await page.goto("/login");
   await page.getByLabel("Username").fill(USERNAME);
@@ -116,7 +128,7 @@ test("login stores a rotating token pair and private calls carry it", async ({ p
   expect(observer.count("GET", /\/order\/v1\/private\/orders$/)).toBeGreaterThan(0);
 });
 
-test("catalog and product detail render real data via the aggregate", async ({ page }) => {
+test("catalog and product detail render real data via the aggregate", async () => {
   await page.goto("/products");
   await expect(page.getByRole("article").first()).toBeVisible();
 
@@ -127,8 +139,8 @@ test("catalog and product detail render real data via the aggregate", async ({ p
   ).toBeGreaterThan(0);
 });
 
-test("cart add/update/remove round-trips and cleans up after itself", async ({ page }) => {
-  test.skip(!USERNAME || !PASSWORD, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
+test("cart add/update/remove round-trips and cleans up after itself", async () => {
+  test.skip(!HAS_CREDS, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
 
   await page.goto("/products");
   await page.getByRole("article").first().getByRole("link").first().click();
@@ -159,8 +171,8 @@ test("cart add/update/remove round-trips and cleans up after itself", async ({ p
   ).toBeGreaterThan(0);
 });
 
-test("an expired access token silently refreshes exactly once", async ({ page }) => {
-  test.skip(!USERNAME || !PASSWORD, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
+test("an expired access token silently refreshes exactly once", async () => {
+  test.skip(!HAS_CREDS, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
 
   // Corrupt only the ACCESS token; the refresh token stays valid, so the
   // interceptor must rotate the pair and retry.
@@ -181,8 +193,8 @@ test("an expired access token silently refreshes exactly once", async ({ page })
   expect(rotated).not.toBe("expired-garbage-token");
 });
 
-test(`checkout funnel (${CHECKOUT_MODE} mode)`, async ({ page }) => {
-  test.skip(!USERNAME || !PASSWORD, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
+test(`checkout funnel (${CHECKOUT_MODE} mode)`, async () => {
+  test.skip(!HAS_CREDS, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
 
   await page.goto("/products");
   await page.getByRole("article").first().getByRole("link").first().click();
@@ -221,11 +233,22 @@ test(`checkout funnel (${CHECKOUT_MODE} mode)`, async ({ page }) => {
       .getByRole("button", { name: "Cancel checkout" })
       .click();
     await expect(page).toHaveURL(/\/cart$/);
+    // Leave the cart empty for the next run.
+    await page
+      .getByRole("button", { name: "Remove", exact: true })
+      .and(page.locator('[aria-haspopup="dialog"]'))
+      .first()
+      .click();
+    await page
+      .getByRole("alertdialog")
+      .getByRole("button", { name: "Remove", exact: true })
+      .click();
+    await expect(page.getByText("Your cart is empty")).toBeVisible();
   }
 });
 
-test("logout revokes the family and clears local state", async ({ page }) => {
-  test.skip(!USERNAME || !PASSWORD, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
+test("logout revokes the family and clears local state", async () => {
+  test.skip(!HAS_CREDS, "E2E_GATEWAY_USERNAME/PASSWORD not provided");
 
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main" }).first();

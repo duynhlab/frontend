@@ -37,9 +37,17 @@ export default function LoginPage() {
   );
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if user is already authenticated
+  // Track auth state live (not mount-once): a logout that lands here must
+  // never show a stale "Already Logged In" card.
   useEffect(() => {
-    setIsAuthenticated(hasStoredToken());
+    const sync = () => setIsAuthenticated(hasStoredToken());
+    sync();
+    window.addEventListener("auth-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("auth-change", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, []);
 
   // Update mode when query param changes

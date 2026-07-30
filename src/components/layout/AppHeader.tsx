@@ -56,8 +56,10 @@ export default function AppHeader() {
   const cartCount = cartData?.count || 0;
   const notificationCount = notificationData?.count || 0;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    // Await the revocation+clear so /login can never observe a half-cleared
+    // session (a fire-and-forget here produced a stale "Already Logged In").
+    await logout();
     void navigate("/login");
   };
 

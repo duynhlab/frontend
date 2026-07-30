@@ -32,7 +32,7 @@ export function useAuth(): {
   isAuthenticated: boolean;
   user: StoredUser | null;
   token: string | null;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshAuth: () => void;
   requireAuth: (navigate: NavigateFunction, returnTo?: string | null) => boolean;
 } {
@@ -55,9 +55,10 @@ export function useAuth(): {
   }, []);
 
   // Logout: revoke the server session (best-effort) and clear local state.
-  const logout = useCallback(() => {
-    void clearSession();
+  // Await-able so navigation can be sequenced after the storage clear.
+  const logout = useCallback(async () => {
     setAuthState({ token: null, user: null });
+    await clearSession();
   }, []);
 
   // Refresh auth state (call after login)

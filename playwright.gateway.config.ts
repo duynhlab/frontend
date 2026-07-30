@@ -31,7 +31,10 @@ export default defineConfig({
   reporter: [["list"], ["html", { outputFolder: "playwright-report-gateway", open: "never" }]],
   use: {
     baseURL,
-    trace: "on",
+    // retain-on-failure only: traces capture request bodies, including the
+    // test account's login POST — never record them for green runs, and the
+    // workflow deliberately does not upload test-results-gateway/.
+    trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     locale: "en-US",

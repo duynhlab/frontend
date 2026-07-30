@@ -69,6 +69,66 @@ These will show up in every after/diff comparison and are deliberate:
   workflow exist (`e2e/gateway/`, `gateway-smoke.yml`); running it against a
   real Kong is a mandatory gate before production cutover.
 
-## After capture
+## After capture (`after/`, captured 2026-07-30, post-migration)
 
-_To be filled in phase D8._
+Same environment as the baseline (mock-mode dev server, agent-browser 0.33.1).
+
+### Quality gates (all green)
+
+| Gate | Result |
+|---|---|
+| `npm ci` + `npm run lint` | pass — 0 errors (advisory react-hooks warnings only, deliberately downgraded pre-migration) |
+| `npm run typecheck` | pass — strict, 3 projects (app / node configs / e2e) |
+| `npm run build` + `scripts/ci/migration-guards.sh` | pass — all 5 guards |
+| `VITE_USE_MOCK=true` production build | **refused** (negative test) |
+| `npm run test:e2e` | 74 passed, 1 skipped-by-design (desktop has no hamburger) — desktop + mobile + visual projects |
+| `npm run test:e2e:mock-mode` | 3 passed — zero external requests, zero runtime errors |
+| `find src e2e -name '*.js(x)'` | 0 files |
+| react-hot-toast imports / `npm ls` / lockfile | 0 / empty / 0 |
+| `any` / `@ts-ignore` / `@ts-expect-error` | 0 |
+| Legacy CSS | only `src/index.css` remains (tokens + base); page CSS deleted |
+
+### agent-browser after-run
+
+- Smoke journeys (guest / customer / checkout-entry): runtime clean.
+- **a11y with the gate ON: clean — 0 critical/serious on all 9 routes.**
+  The baseline had a serious `color-contrast` on every route plus critical
+  `label` violations on login and the review form; fixed by real token work
+  (primary `#6366f1`→`#818cf8` + dark foreground, destructive → `#f87171`,
+  info → `#60a5fa`, muted `#777`→`#9ca3af`, no opacity-dimming of muted text)
+  and programmatically labelled forms.
+- Visual set captured for 9 routes × 3 viewports + annotated key screens.
+
+### Bundle delta (production build)
+
+| Metric | Before | After |
+|---|---|---|
+| Main JS (gzip) | 317.9 kB (105.8 kB) | split: 202.0 kB (64.2 kB) entry + 91.1 kB (31.3 kB) UI-primitives chunk + per-route chunks; 776 kB raw JS total |
+| CSS | ~40 kB across 8 files | 68 kB (12.5 kB gzip) single file (Tailwind + shadcn) |
+| Fonts | Google Fonts request (never applied) | 84 kB self-hosted Geist woff2 (no external request) |
+| `dist/` total | 460 kB | 936 kB |
+
+The increase is the design system + self-hosted font; entry gzip JS is
+comparable (105.8 kB → 95.5 kB across entry+UI chunk).
+
+### Web Vitals (mock dev server, relative signal only)
+
+Home: FCP 160→212 ms, LCP 452→520 ms, CLS 0.02→0.04. Products: FCP 76→104 ms,
+LCP 600→640 ms, CLS 0.00→0.02. Small, consistent with a richer component
+layer; all comfortably inside "good" thresholds. No regression to investigate.
+
+### Bug-to-regression loop (found by the new gates during the cutover)
+
+1. StrictMode double-booted the checkout session (2× POST /sessions) —
+   ref-guarded; covered by the exactly-once contract assertion.
+2. `toAppError` lost mock-error envelopes (checkout CONFLICT) — duck-typed;
+   covered by the empty-cart checkout path.
+3. Status-fallback copy outranked curated backend-message copy — reordered;
+   covered by the 500-retry checkout test.
+4. Mock-mode leak tripwire caught the dead Google-Fonts request — link
+   removed, favicon self-hosted.
+5. An earlier token rename had mapped the shadcn `accent` utility to the
+   brand color — fixed while purging the unlayered legacy CSS that had been
+   silently overriding Tailwind utilities.
+6. Read-notification `opacity-70` pushed muted text below AA — replaced with
+   an AA-safe muted-token treatment; caught by the after-run a11y gate.
