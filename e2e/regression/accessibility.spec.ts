@@ -30,7 +30,8 @@ test.describe("axe scans (guest)", () => {
   for (const route of ["/", "/products", "/products/prod-00001", "/login"]) {
     test(`no critical/serious violations on ${route}`, async ({ page }) => {
       await page.goto(route);
-      await page.waitForLoadState("networkidle");
+      // Anchor on rendered content instead of network-idle heuristics.
+      await expect(page.getByRole("heading").first()).toBeVisible();
       await expectNoSeriousViolations(page);
     });
   }
