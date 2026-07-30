@@ -1,5 +1,5 @@
 # ===================================
-# Stage 1: Build Frontend with Node 24
+# Stage 1: Build Frontend with Node 26 (npm run build typechecks first)
 # ===================================
 FROM node:26-alpine AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
