@@ -5,8 +5,8 @@ node_modules/
 dist/
 build/
 
-# Environment files
-# .env
+# Environment files (copy .env.example → .env; never commit real env)
+.env
 .env.local
 .env.*.local
 
