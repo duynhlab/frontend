@@ -13,10 +13,6 @@
     "types": ["vite/client"],
     "noEmit": true,
     "skipLibCheck": true,
-    // TRANSITIONAL (remove when the last page converts to .tsx): lets the
-    // typed shell import the not-yet-converted .jsx pages during the cutover.
-    "allowJs": true,
-    "checkJs": false,
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
