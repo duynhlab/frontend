@@ -56,6 +56,18 @@
 
   /* Layout */
   --header-height: 3rem;
+
+  /*
+   * Interactive control heights. 24px is the WCAG 2.5.8 floor, 32px is the
+   * app default. `--touch-target` is a hit AREA (applied through `after:`),
+   * never a box size — growing the box would break the density contract.
+   * Single-sourced because button, input, select and pagination must agree.
+   */
+  --control-height: 2rem; /* 32px */
+  --control-height-xs: 1.5rem; /* 24px */
+  --control-height-sm: 1.75rem; /* 28px */
+  --control-height-lg: 2.25rem; /* 36px */
+  --touch-target: 2.75rem; /* 44px */
 }
 
 html,
@@ -113,6 +125,13 @@ body,
 
   /* Sticky-header offset (spacing-header ⇒ pt-header, top-header, …) */
   --spacing-header: var(--header-height);
+
+  /* Control sizing (h-control, size-control-sm, after:size-touch, …) */
+  --spacing-control: var(--control-height);
+  --spacing-control-xs: var(--control-height-xs);
+  --spacing-control-sm: var(--control-height-sm);
+  --spacing-control-lg: var(--control-height-lg);
+  --spacing-touch: var(--touch-target);
 }
 
 @layer base {

@@ -69,6 +69,15 @@ export default tseslint.config(
         },
     },
 
+    // Node tooling scripts. The density harness also holds page.evaluate
+    // callbacks, so it needs browser globals alongside the Node ones.
+    {
+        files: ['scripts/**/*.{js,mjs}'],
+        languageOptions: {
+            globals: { ...globals.node, ...globals.browser },
+        },
+    },
+
     // E2E — linted (it was fully ignored before the cutover).
     {
         files: ['e2e/**/*.ts'],

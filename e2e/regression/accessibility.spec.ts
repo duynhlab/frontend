@@ -79,7 +79,11 @@ test.describe("axe scans (authenticated)", () => {
       timeout: 8_000,
     });
     await cart.removeButton().click();
-    await expect(page.getByRole("alertdialog")).toBeVisible();
+    // toBeVisible() resolves while the entrance animation is still running, at
+    // which point the content is near-transparent and axe measures every
+    // foreground colour blended against the backdrop — a false contrast
+    // failure. Wait for the animation to land on full opacity instead.
+    await expect(page.getByRole("alertdialog")).toHaveCSS("opacity", "1");
     await expectNoSeriousViolations(page);
   });
 });
