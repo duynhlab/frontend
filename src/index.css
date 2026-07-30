@@ -1,40 +1,67 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 
-/* Minimal UI - API Test Harness */
+@custom-variant dark (&:is(.dark *));
 
+/*
+ * Single permanent dark theme — there is no theme toggle and no `.dark`
+ * class. `--primary` is the brand color (legacy indigo); shadcn `--accent`
+ * is a hover/selection SURFACE, never the brand. Status colors are theme
+ * tokens: success = completed, warning = attention (not failed),
+ * destructive = delete/cancel or severe errors, muted = secondary text
+ * (must keep AA contrast).
+ */
 :root {
-  --bg: #121212;
-  --bg-card: #1a1a1a;
-  --bg-hover: #222;
-  --text: #ddd;
-  --text-muted: #777;
-  --accent: #6366f1;
+  color-scheme: dark;
+
+  --background: #121212;
+  --foreground: #d6d6d6;
+  --card: #1a1a1a;
+  --card-foreground: #d6d6d6;
+  --popover: #1a1a1a;
+  --popover-foreground: #d6d6d6;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #222222;
+  --secondary-foreground: #d6d6d6;
+  --muted: #222222;
+  --muted-foreground: #9ca3af;
+  --accent: #26262b;
+  --accent-foreground: #f4f4f5;
+  --destructive: #ef4444;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #6366f1;
+  --chart-1: #6366f1;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #3b82f6;
+  --chart-5: #ef4444;
+  --radius: 0.5rem;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #d6d6d6;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #26262b;
+  --sidebar-accent-foreground: #f4f4f5;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #6366f1;
+
+  /* Status tokens */
   --success: #22c55e;
   --warning: #f59e0b;
   --info: #3b82f6;
-  --error: #ef4444;
-  --border: #2a2a2a;
-  --header-height: 3rem;
-}
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* Layout */
+  --header-height: 3rem;
 }
 
 html,
 body,
 #root {
   height: 100%;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.4;
 }
 
 /* App Layout */
@@ -49,7 +76,7 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--primary);
   text-decoration: none;
 }
 
@@ -76,7 +103,7 @@ a:hover {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: var(--bg-card);
+  background: var(--card);
   border-bottom: 1px solid var(--border);
 }
 
@@ -94,12 +121,12 @@ a:hover {
 }
 
 .header nav a.active {
-  color: var(--accent);
+  color: var(--primary);
   font-weight: 600;
 }
 
 .cart-badge {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   padding: 1px 6px;
   font-size: 0.6875rem;
@@ -107,7 +134,7 @@ a:hover {
 }
 
 .notification-badge {
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   padding: 1px 6px;
   font-size: 0.6875rem;
@@ -118,7 +145,7 @@ a:hover {
 .app-footer {
   text-align: center;
   padding: 1.5rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   border-top: 1px solid var(--border);
   margin-top: 2rem;
   font-size: 0.75rem;
@@ -137,14 +164,14 @@ a:hover {
 button {
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
+  background: var(--card);
+  color: var(--foreground);
   cursor: pointer;
   font-size: 0.8125rem;
 }
 
 button:hover {
-  background: var(--bg-hover);
+  background: var(--secondary);
 }
 
 button:disabled {
@@ -155,7 +182,7 @@ button:disabled {
 .btn-logout {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--primary);
   cursor: pointer;
   padding: 0;
   font-size: inherit;
@@ -163,8 +190,8 @@ button:disabled {
 
 .btn-primary,
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--primary);
+  border-color: var(--primary);
   color: #fff;
 }
 
@@ -175,8 +202,8 @@ button.primary:hover {
 
 .btn-danger,
 button.danger {
-  background: var(--error);
-  border-color: var(--error);
+  background: var(--destructive);
+  border-color: var(--destructive);
   color: #fff;
 }
 
@@ -186,21 +213,21 @@ select,
 textarea {
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
+  background: var(--card);
+  color: var(--foreground);
   font-size: 0.8125rem;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 1px solid var(--accent);
-  border-color: var(--accent);
+  outline: 1px solid var(--primary);
+  border-color: var(--primary);
 }
 
 /* API Label */
 .api-label {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   margin-bottom: 0.75rem;
   font-family: monospace;
@@ -210,7 +237,7 @@ textarea:focus {
 .back-link {
   display: inline-block;
   margin-bottom: 0.75rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
@@ -242,7 +269,7 @@ textarea:focus {
 /* Product Card */
 .product-card {
   display: block;
-  background: var(--bg-card);
+  background: var(--card);
   border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -251,12 +278,12 @@ textarea:focus {
 }
 
 .product-card:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 .product-card:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
   text-decoration: none;
 }
 
@@ -283,7 +310,7 @@ textarea:focus {
 .product-price {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--primary);
 }
 
 /* Skeleton */
@@ -337,7 +364,7 @@ textarea:focus {
 }
 
 .detail-description {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   margin-bottom: 0.75rem;
   font-size: 0.8125rem;
 }
@@ -345,7 +372,7 @@ textarea:focus {
 .detail-price {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--primary);
   margin-bottom: 0.75rem;
 }
 
@@ -357,7 +384,7 @@ textarea:focus {
 }
 
 .stock-out {
-  color: var(--error);
+  color: var(--destructive);
   margin-bottom: 0.75rem;
   font-size: 0.8125rem;
 }
@@ -390,7 +417,7 @@ textarea:focus {
 }
 
 .error-text {
-  color: var(--error);
+  color: var(--destructive);
   margin-top: 0.5rem;
   font-size: 0.8125rem;
 }
@@ -399,17 +426,17 @@ textarea:focus {
 .error-box,
 .error {
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--error);
-  color: var(--error);
+  border: 1px solid var(--destructive);
+  color: var(--destructive);
   padding: 0.75rem;
   font-size: 0.8125rem;
 }
 
 .empty-box,
 .empty {
-  background: var(--bg-card);
+  background: var(--card);
   border: 1px dashed var(--border);
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 2rem;
   text-align: center;
   font-size: 0.8125rem;
@@ -430,7 +457,7 @@ textarea:focus {
 
 .api-debug summary {
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   padding: 0.375rem 0;
   font-size: 0.75rem;
 }
@@ -476,7 +503,7 @@ textarea:focus {
 
 /* Cards */
 .card {
-  background: var(--bg-card);
+  background: var(--card);
   border: 1px solid var(--border);
   padding: 0.75rem;
 }
@@ -501,7 +528,7 @@ td {
 }
 
 th {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-weight: normal;
   font-size: 0.75rem;
 }
@@ -514,7 +541,7 @@ th {
 .form-group label {
   display: block;
   margin-bottom: 0.25rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   font-size: 0.75rem;
 }
 
@@ -534,7 +561,7 @@ th {
 .auth-form {
   width: 100%;
   max-width: 320px;
-  background: var(--bg-card);
+  background: var(--card);
   border: 1px solid var(--border);
   padding: 1.5rem;
 }
@@ -552,7 +579,7 @@ th {
 .auth-toggle button {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--primary);
   padding: 0;
   cursor: pointer;
 }
@@ -563,7 +590,7 @@ th {
 
 /* Loading */
 .loading {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
   text-align: center;
   padding: 2rem;
   font-size: 0.8125rem;
@@ -628,7 +655,7 @@ th {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: var(--bg-card);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -648,7 +675,7 @@ th {
 
 .reviews-score-max {
   font-size: 1rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 
 .reviews-score-meta {
@@ -668,7 +695,7 @@ th {
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg-card);
+  background: var(--card);
 }
 
 .review-header {
@@ -683,7 +710,7 @@ th {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--primary);
   color: #fff;
   display: flex;
   align-items: center;
@@ -701,7 +728,7 @@ th {
 .review-author {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--foreground);
 }
 
 .review-date {
@@ -722,7 +749,7 @@ th {
 .review-comment {
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: var(--text);
+  color: var(--foreground);
   margin: 0.25rem 0 0;
   max-width: 70ch;
 }
@@ -816,13 +843,13 @@ th {
 
 .order-total-value {
   font-size: 1.125rem;
-  color: var(--accent);
+  color: var(--primary);
 }
 
 /* Shipment box */
 .shipment-box {
-  background: var(--bg-hover);
-  border: 1px solid var(--accent);
+  background: var(--secondary);
+  border: 1px solid var(--primary);
   padding: 0.75rem;
   margin: 0.75rem 0;
   font-size: 0.75rem;
@@ -835,8 +862,8 @@ th {
 /* Payment box — same visual family as the shipment box (status text carries
    the semantic color, so the frame stays neutral like its sibling) */
 .payment-box {
-  background: var(--bg-hover);
-  border: 1px solid var(--accent);
+  background: var(--secondary);
+  border: 1px solid var(--primary);
   padding: 0.75rem;
   margin: 0.75rem 0;
   font-size: 0.75rem;
@@ -879,7 +906,7 @@ th {
 
 /* Text utilities */
 .text-muted {
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 
 /* Pagination */
@@ -894,7 +921,7 @@ th {
 
 .pagination__info {
   font-size: 0.8125rem;
-  color: var(--text-muted);
+  color: var(--muted-foreground);
 }
 
 /* ==========================================
@@ -1171,5 +1198,68 @@ th {
 
   .loading {
     padding: 1.5rem;
+  }
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--primary);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Status colors as first-class utilities (text-success, bg-warning/10, …) */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  /* Sticky-header offset (spacing-header ⇒ pt-header, top-header, …) */
+  --spacing-header: var(--header-height);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }

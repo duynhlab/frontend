@@ -18,12 +18,12 @@
 
 .profile-field label {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
 }
 
 .profile-field span {
     font-size: 0.875rem;
-    color: var(--text);
+    color: var(--foreground);
 }
 
 .profile-form {

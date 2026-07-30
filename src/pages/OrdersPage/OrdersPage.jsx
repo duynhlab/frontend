@@ -71,18 +71,18 @@ export default function OrdersPage() {
             pending: 'var(--warning)',
             processing: 'var(--info)',
             completed: 'var(--success)',
-            shipped: 'var(--accent)',
+            shipped: 'var(--primary)',
             delivered: 'var(--success)',
             in_transit: 'var(--info)',
             // payment states (order-details enrichment)
             authorized: 'var(--info)',
             captured: 'var(--success)',
-            failed: 'var(--error)',
-            voided: 'var(--text-muted)',
-            refunded: 'var(--accent)',
+            failed: 'var(--destructive)',
+            voided: 'var(--muted-foreground)',
+            refunded: 'var(--primary)',
             partially_refunded: 'var(--warning)',
         };
-        return colors[status] || 'var(--text-muted)';
+        return colors[status] || 'var(--muted-foreground)';
     };
 
     // Auth gate

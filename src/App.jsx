@@ -153,22 +153,22 @@ function App() {
                 toastOptions={{
                     duration: 3500,
                     style: {
-                        background: 'var(--bg-card)',
-                        color: 'var(--text)',
+                        background: 'var(--card)',
+                        color: 'var(--foreground)',
                         border: '1px solid var(--border)',
                     },
                     success: {
                         duration: 2500,
                         iconTheme: {
                             primary: 'var(--success)',
-                            secondary: 'var(--bg-card)',
+                            secondary: 'var(--card)',
                         },
                     },
                     error: {
                         duration: 5000,
                         iconTheme: {
-                            primary: 'var(--error)',
-                            secondary: 'var(--bg-card)',
+                            primary: 'var(--destructive)',
+                            secondary: 'var(--card)',
                         },
                     },
                 }}
