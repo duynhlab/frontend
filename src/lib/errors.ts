@@ -122,9 +122,17 @@ interface ParsedEnvelope {
  *        { "error": "<string>", "code": "<CODE>" }
  *   2. Checkout confirm-requote 409s (price/stock/promo):
  *        { "error": { "code": "<CODE>", "message": "<string>" }, "session": {…} }
+ *
+ * The response is duck-typed (not gated on isAxiosError): the in-app mock
+ * throws plain Errors carrying the same axios-shaped `.response`, and those
+ * must resolve codes (e.g. checkout CONFLICT) identically to real HTTP.
  */
 function parseEnvelope(error: unknown): ParsedEnvelope {
-  if (!isAxiosError(error) || !error.response) {
+  const response =
+    typeof error === "object" && error !== null
+      ? (error as { response?: { status?: number; data?: unknown } }).response
+      : undefined;
+  if (!response) {
     return {
       code: undefined,
       message: error instanceof Error ? error.message : undefined,
@@ -132,10 +140,15 @@ function parseEnvelope(error: unknown): ParsedEnvelope {
       status: undefined,
     };
   }
-  const status = error.response.status;
-  const data: unknown = error.response.data;
+  const status = response.status;
+  const data: unknown = response.data;
   if (typeof data !== "object" || data === null) {
-    return { code: undefined, message: error.message, session: undefined, status };
+    return {
+      code: undefined,
+      message: error instanceof Error ? error.message : undefined,
+      session: undefined,
+      status,
+    };
   }
   const envelope = data as {
     error?: unknown;
@@ -160,7 +173,9 @@ function parseEnvelope(error: unknown): ParsedEnvelope {
         ? raw
         : typeof envelope.message === "string"
           ? envelope.message
-          : error.message,
+          : error instanceof Error
+            ? error.message
+            : undefined,
     session: (envelope.session as CheckoutSession | undefined) ?? undefined,
     status,
   };
