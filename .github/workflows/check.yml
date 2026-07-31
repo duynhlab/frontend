@@ -120,66 +120,6 @@ jobs:
             test-results-mock-mode/
           retention-days: 7
 
-  # TEMPORARY — remove once the regenerated baselines are committed.
-  # `update-visual-baselines.yml` cannot be dispatched until it exists on the
-  # default branch, so the density refactor's baselines are regenerated here.
-  # Never generate them from macOS: font rasterization differs from CI Linux.
-  update-visual-baselines-temp:
-    if: startsWith(github.head_ref, 'refactor/shadcn')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          # pull_request checks out a detached merge commit; the branch itself
-          # is needed to push the regenerated PNGs back.
-          ref: ${{ github.head_ref }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-1.61.1
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Regenerate visual baselines
-        run: npx playwright test --project=visual --project=visual-mobile --update-snapshots
-
-      # Committed from the job rather than downloaded as an artifact: the
-      # artifact lives on Azure blob storage, which is unreachable from the
-      # authoring machine's network.
-      - name: Commit baselines
-        run: |
-          git config user.name  'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -- e2e/__screenshots__
-          if git diff --cached --quiet; then
-            echo "baselines already current"
-            exit 0
-          fi
-          git commit -m 'Regenerate CI-Linux visual baselines for the density refactor'
-          git push origin HEAD:${{ github.head_ref }}
-
-      - name: Upload baselines
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-baselines
-          path: e2e/__screenshots__/
-          retention-days: 7
-
   agent-browser:
     # Dogfood gate for the migration branch; demote to nightly after cutover
     # (plan §17.2) rather than taxing every small PR.
