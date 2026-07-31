@@ -19,6 +19,7 @@ import ApiDebug from "@/components/common/ApiDebug";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PageShell from "@/components/layout/PageShell";
 
 const TYPE_ICONS: Record<string, string> = {
   order_shipped: "📦",
@@ -205,15 +206,15 @@ export default function NotificationPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-4">
+      <PageShell>
         <PageHeader title="Notifications" backLink="/" backText="← Back to Home" />
         <EmptyState message="Please log in to view notifications" icon="🔒" />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <PageHeader
         title="Notifications"
         backLink="/"
@@ -305,6 +306,6 @@ export default function NotificationPage() {
       )}
 
       <ApiDebug data={notifications} />
-    </div>
+    </PageShell>
   );
 }

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import PageShell from "@/components/layout/PageShell";
 
 const profileSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
@@ -78,15 +79,15 @@ export default function ProfilePage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-4">
+      <PageShell>
         <PageHeader title="My Profile" backLink="/" backText="← Back to Home" />
         <EmptyState message="Please log in to view your profile" icon="🔒" />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <PageHeader
         title="My Profile"
         backLink="/"
@@ -177,6 +178,6 @@ export default function ProfilePage() {
       )}
 
       <ApiDebug data={profile} />
-    </div>
+    </PageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PageShell from "@/components/layout/PageShell";
 
 /**
  * HomePage — landing page: hero + CTA. No product fetching (that belongs to
@@ -12,7 +13,7 @@ const preloadProducts = () => {
 
 export default function HomePage() {
   return (
-    <div className="container mx-auto px-4">
+    <PageShell pad="none">
       <section className="flex flex-col items-center gap-5 py-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight">
           Welcome to <span className="text-primary">DuynhLab</span> 👋
@@ -30,6 +31,6 @@ export default function HomePage() {
           Browse Products →
         </Link>
       </section>
-    </div>
+    </PageShell>
   );
 }

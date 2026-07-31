@@ -34,6 +34,7 @@ import ReviewStep from "@/features/checkout/ReviewStep";
 import OrderSummary from "@/features/checkout/OrderSummary";
 import { PAYMENT_METHODS, SHIPPING_METHODS } from "@/features/checkout/constants";
 import type { AddressFormValues } from "@/features/checkout/schemas";
+import PageShell from "@/components/layout/PageShell";
 
 // Session status → funnel step (the server FSM is the source of truth; the
 // UI just renders whatever state comes back).
@@ -267,7 +268,7 @@ export default function CheckoutFlowPage() {
     cartCount !== sessionCount;
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <h2 ref={headingRef} tabIndex={-1} className="mb-4 text-xl font-semibold tracking-tight">
         Checkout
       </h2>
@@ -391,6 +392,6 @@ export default function CheckoutFlowPage() {
           <ApiDebug data={session} />
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

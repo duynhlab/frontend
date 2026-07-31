@@ -36,7 +36,14 @@ export default function MobileNavigation({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button type="button" variant="ghost" size="icon" aria-label="Open menu">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              // 44px hit area inside the 48px bar; the box stays 32px.
+              className="relative after:absolute after:-inset-1.5 after:content-['']"
+              aria-label="Open menu"
+            >
               <MenuIcon aria-hidden="true" />
             </Button>
           }
@@ -53,7 +60,7 @@ export default function MobileNavigation({
                 onClick={close}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-accent",
+                    "flex min-h-touch items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-accent",
                     isActive ? "font-semibold text-primary" : "text-foreground",
                   )
                 }

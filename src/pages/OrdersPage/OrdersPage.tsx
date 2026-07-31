@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import PageShell from "@/components/layout/PageShell";
 
 /**
  * Status → tone class. Exhaustive over OrderStatus (noFallthroughCasesInSwitch
@@ -102,19 +103,19 @@ export default function OrdersPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-4">
+      <PageShell>
         <PageHeader title="My Orders" backLink="/" backText="← Back to Home" />
         <EmptyState message="Please log in to view your orders" icon="🔒">
           <Button onClick={() => void navigate("/login?returnTo=/orders")}>
             Login
           </Button>
         </EmptyState>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <PageHeader
         title="My Orders"
         backLink="/"
@@ -221,7 +222,7 @@ export default function OrdersPage() {
         data={{ orders: ordersList, selectedOrderData }}
         label="Orders API Response"
       />
-    </div>
+    </PageShell>
   );
 }
 

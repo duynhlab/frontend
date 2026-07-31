@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/common/EmptyState";
+import PageShell from "@/components/layout/PageShell";
 
 /**
  * NotFoundPage — real 404 for unknown routes (the legacy router silently
@@ -8,7 +9,7 @@ import EmptyState from "@/components/common/EmptyState";
  */
 export default function NotFoundPage() {
   return (
-    <div className="container mx-auto px-4 py-10">
+    <PageShell width="narrow" pad="roomy">
       <EmptyState
         icon="🧭"
         message="Page not found"
@@ -17,6 +18,6 @@ export default function NotFoundPage() {
         <Button render={<Link to="/">Go home</Link>} />
         <Button variant="outline" render={<Link to="/products">Browse products</Link>} />
       </EmptyState>
-    </div>
+    </PageShell>
   );
 }

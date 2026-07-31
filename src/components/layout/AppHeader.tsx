@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import PageShell from "./PageShell";
 import MobileNavigation from "./MobileNavigation";
 
 export interface NavEntry {
@@ -79,7 +80,7 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 h-header border-b bg-card">
-      <div className="container mx-auto flex h-full items-center justify-between gap-4 px-4">
+      <PageShell width="wide" pad="none" className="flex h-full items-center justify-between gap-4">
         <h1 className="text-base font-semibold">
           <Link to="/" className="inline-flex items-center gap-1.5 text-foreground hover:no-underline">
             <ShoppingCartIcon aria-hidden="true" className="size-4 text-primary" />
@@ -88,7 +89,7 @@ export default function AppHeader() {
         </h1>
 
         {/* Desktop navigation */}
-        <nav aria-label="Main" className="hidden items-center gap-5 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-4 md:flex">
           {entries.map((entry) => (
             <NavLink key={entry.to} to={entry.to} className={navLinkClass}>
               {entry.label}
@@ -114,7 +115,7 @@ export default function AppHeader() {
           isAuthenticated={isAuthenticated}
           onLogout={handleLogout}
         />
-      </div>
+      </PageShell>
     </header>
   );
 }

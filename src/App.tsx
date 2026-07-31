@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { GridSkeleton } from "@/components/common/Skeleton";
+import { RouteFallback } from "@/components/common/Skeleton";
 import AppLayout from "@/components/layout/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NotFoundPage from "@/pages/NotFoundPage";
@@ -22,7 +22,7 @@ const LoginPage = lazy(() => import("@/pages/LoginPage/LoginPage"));
 function App() {
   return (
     <AppLayout>
-      <Suspense fallback={<GridSkeleton count={8} />}>
+      <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/products" element={<ProductListPage />} />

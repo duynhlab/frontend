@@ -21,6 +21,7 @@ import type { Review } from "@/api/types/product";
 import { formatCurrency } from "@/lib/format";
 import { getStoredUser, isAuthenticated as hasStoredToken } from "@/auth/tokens";
 import type { StoredUser } from "@/api/types/auth";
+import PageShell from "@/components/layout/PageShell";
 
 function formatReviewDate(review: Review): string {
   if (!review.created_at) return "—";
@@ -114,7 +115,7 @@ export default function ProductDetailPage() {
   const reviewsReturnTo = encodeURIComponent(`/products/${id}#reviews`);
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <Link
         to="/products"
         className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground"
@@ -291,6 +292,6 @@ export default function ProductDetailPage() {
       )}
 
       <ApiDebug data={{ product: data, reviews }} />
-    </div>
+    </PageShell>
   );
 }

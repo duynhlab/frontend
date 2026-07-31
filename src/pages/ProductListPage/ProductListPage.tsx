@@ -6,6 +6,7 @@ import { GridSkeleton } from "@/components/common/Skeleton";
 import EmptyState from "@/components/common/EmptyState";
 import AppError from "@/components/common/AppError";
 import { useProducts } from "@/hooks/useProducts";
+import PageShell from "@/components/layout/PageShell";
 
 const PRODUCTS_PER_PAGE = 24;
 
@@ -35,7 +36,7 @@ export default function ProductListPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell width="wide">
       <div className="mb-4">
         <h2 className="text-xl font-semibold tracking-tight">Products</h2>
         {total > 0 ? (
@@ -70,6 +71,6 @@ export default function ProductListPage() {
           />
         </>
       ) : null}
-    </div>
+    </PageShell>
   );
 }

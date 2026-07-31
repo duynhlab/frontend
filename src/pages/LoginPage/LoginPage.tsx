@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import PageShell from "@/components/layout/PageShell";
 
 type AuthMode = "login" | "register";
 
@@ -69,7 +70,7 @@ export default function LoginPage() {
   // Already authenticated — show message + CTA
   if (isAuthenticated) {
     return (
-      <div className="container mx-auto flex max-w-sm flex-col px-4 py-10">
+      <PageShell width="narrow" pad="roomy">
         <Card>
           <CardHeader>
             <CardTitle>Already Logged In</CardTitle>
@@ -88,12 +89,12 @@ export default function LoginPage() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container mx-auto flex max-w-sm flex-col px-4 py-10">
+    <PageShell width="narrow" pad="roomy">
       <Card>
         <CardHeader>
           <Link
@@ -147,6 +148,6 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }

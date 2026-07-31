@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CartItemRow from "@/features/cart/CartItemRow";
 import CartSummary from "@/features/cart/CartSummary";
+import PageShell from "@/components/layout/PageShell";
 
 /**
  * Cart Page — full cart operations
@@ -79,7 +80,7 @@ export default function CartPage() {
   // Gated state for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-4">
+      <PageShell>
         <h2 className="mb-4 text-xl font-semibold tracking-tight">Shopping Cart</h2>
         <EmptyState icon="🔐" message="You need to log in to view your cart.">
           <Button onClick={() => void navigate("/login")}>Login</Button>
@@ -87,12 +88,12 @@ export default function CartPage() {
             Continue Shopping
           </Button>
         </EmptyState>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <PageShell>
       <h2 className="mb-1 text-xl font-semibold tracking-tight">Shopping Cart</h2>
       <p className="mb-4 font-mono text-xs text-muted-foreground">
         API: GET /cart/v1/private/cart
@@ -134,6 +135,6 @@ export default function CartPage() {
       )}
 
       <ApiDebug data={cart} />
-    </div>
+    </PageShell>
   );
 }
