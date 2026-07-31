@@ -130,9 +130,16 @@ export default function OrdersPage() {
       )}
 
       {!loading && !error && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div
+          className={cn(
+            "grid gap-4",
+            // The detail pane only exists once something is selected, so the
+            // list runs full width until then instead of facing an empty half.
+            selectedOrderId && "lg:grid-cols-[minmax(0,1fr)_24rem]",
+          )}
+        >
           {/* Orders List */}
-          <Card>
+          <Card size="sm">
             <CardHeader>
               <CardTitle>Order History</CardTitle>
             </CardHeader>
@@ -197,24 +204,20 @@ export default function OrdersPage() {
           </Card>
 
           {/* Order Details */}
-          <Card>
+          {selectedOrderId && (
+          <Card size="sm">
             <CardHeader>
               <CardTitle>Order Details</CardTitle>
             </CardHeader>
             <CardContent>
               {orderDetailsLoading && <LoadingState message="Loading order details..." />}
 
-              {!orderDetailsLoading && selectedOrderData ? (
+              {!orderDetailsLoading && selectedOrderData && (
                 <OrderDetailsPanel details={selectedOrderData} />
-              ) : (
-                !orderDetailsLoading && (
-                  <p className="text-sm text-muted-foreground">
-                    Select an order to view details
-                  </p>
-                )
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       )}
 
@@ -230,7 +233,7 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
   const { order, shipment, payment } = details;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <strong className="font-mono text-sm">Order #{order.id}</strong>
         <StatusBadge status={order.status} />
@@ -240,36 +243,36 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
       </div>
 
       {order.items && order.items.length > 0 && (
-        <div className="overflow-x-auto rounded-md border p-3">
-          <h4 className="mb-2 text-sm font-semibold">Order Items</h4>
+        <section className="overflow-x-auto">
+          <h4 className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Order Items</h4>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
-                <th className="py-1 font-medium">Product</th>
-                <th className="py-1 font-medium">Qty</th>
-                <th className="hidden py-1 font-medium sm:table-cell">Price</th>
-                <th className="py-1 font-medium">Subtotal</th>
+                <th className="py-2 font-medium">Product</th>
+                <th className="py-2 font-medium">Qty</th>
+                <th className="hidden py-2 font-medium sm:table-cell">Price</th>
+                <th className="py-2 font-medium">Subtotal</th>
               </tr>
             </thead>
             <tbody>
               {order.items.map((item, i) => (
                 <tr key={i} className="border-b last:border-b-0">
-                  <td className="py-1">{item.product_name}</td>
-                  <td className="py-1">{item.quantity}</td>
+                  <td className="py-2">{item.product_name}</td>
+                  <td className="py-2">{item.quantity}</td>
                   <td className="hidden py-1 sm:table-cell">
                     {formatCurrency(item.price)}
                   </td>
-                  <td className="py-1">{formatCurrency(item.subtotal)}</td>
+                  <td className="py-2">{formatCurrency(item.subtotal)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </section>
       )}
 
       {(order.subtotal !== undefined || order.shipping !== undefined) && (
-        <div className="rounded-md border p-3">
-          <h4 className="mb-2 text-sm font-semibold">Order Summary</h4>
+        <section>
+          <h4 className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Order Summary</h4>
           <dl className="space-y-1 text-sm">
             <div className="flex justify-between">
               <dt>Subtotal</dt>
@@ -284,13 +287,13 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
               <dd className="text-primary">{formatCurrency(order.total)}</dd>
             </div>
           </dl>
-        </div>
+        </section>
       )}
 
       {/* Payment — from the aggregation endpoint (present when payments are enabled) */}
       {payment && (
-        <div className="rounded-md border p-3 text-sm">
-          <h4 className="mb-1 font-semibold">Payment</h4>
+        <section>
+          <h4 className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Payment</h4>
           <p>
             Status: <StatusBadge status={payment.status} />
           </p>
@@ -303,13 +306,13 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
               Decline reason: {payment.decline_code.replace(/_/g, " ")}
             </p>
           )}
-        </div>
+        </section>
       )}
 
       {/* Shipping tracking — from the aggregation endpoint */}
       {shipment ? (
-        <div className="rounded-md border p-3 text-sm">
-          <h4 className="mb-1 font-semibold">Shipment Tracking</h4>
+        <section>
+          <h4 className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Shipment Tracking</h4>
           <p>Carrier: {shipment.carrier || "N/A"}</p>
           <p>
             Status: <StatusBadge status={shipment.status} />
@@ -318,7 +321,7 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
           {shipment.estimated_delivery && (
             <p>Est: {new Date(shipment.estimated_delivery).toLocaleDateString()}</p>
           )}
-        </div>
+        </section>
       ) : (
         order.status === "shipped" && (
           <p className="text-sm text-muted-foreground">Shipment info not available</p>

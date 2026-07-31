@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,11 +106,11 @@ export default function ProfilePage() {
       )}
 
       {!loading && !error && profile && (
-        <Card className="max-w-xl">
-          <CardContent className="pt-6">
+        <Card size="sm" className="max-w-md">
+          <CardContent>
             {!editMode ? (
               <div className="space-y-3">
-                <dl className="space-y-2 text-sm">
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
                   {(
                     [
                       ["User ID", profile.id || "N/A"],
@@ -120,10 +120,10 @@ export default function ProfilePage() {
                       ["Phone", profile.phone || "Not set"],
                     ] as const
                   ).map(([label, value]) => (
-                    <div key={label} className="flex justify-between gap-4">
+                    <Fragment key={label}>
                       <dt className="text-muted-foreground">{label}</dt>
-                      <dd className="text-right">{value}</dd>
-                    </div>
+                      <dd className="min-w-0 truncate">{value}</dd>
+                    </Fragment>
                   ))}
                 </dl>
                 <Button type="button" onClick={() => setEditMode(true)}>
@@ -131,7 +131,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-4">
+              <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-3">
                 <Field data-invalid={!!errors.name || undefined}>
                   <FieldLabel htmlFor="profile-name">Name</FieldLabel>
                   <Input

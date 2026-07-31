@@ -22,7 +22,7 @@ export default function AppPagination({
   return (
     <nav
       aria-label={label}
-      className="mt-6 flex items-center justify-center gap-4"
+      className="mt-4 flex items-center justify-center gap-3"
     >
       <Button
         type="button"

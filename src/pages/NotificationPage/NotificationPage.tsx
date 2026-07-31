@@ -17,6 +17,13 @@ import AppError from "@/components/common/AppError";
 import EmptyState from "@/components/common/EmptyState";
 import ApiDebug from "@/components/common/ApiDebug";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import PageShell from "@/components/layout/PageShell";
@@ -54,9 +61,9 @@ function NotificationItem({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b py-3 last:border-b-0">
-      <div>
-        <div className="flex items-center gap-2">
+    <li className="flex items-start justify-between gap-3 border-b py-2 last:border-b-0">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2">
           <span aria-hidden="true">{getNotificationIcon(notification.type)}</span>
           {/* Read items de-emphasize via the muted TOKEN (kept at AA) — an
               opacity fade would push muted text below the contrast floor. */}
@@ -68,18 +75,21 @@ function NotificationItem({
           >
             {notification.title || notification.message}
           </h4>
+          <time
+            dateTime={notification.created_at}
+            className="text-xs text-muted-foreground"
+          >
+            {formatDate(notification.created_at)}
+          </time>
         </div>
         {notification.title && notification.message !== notification.title && (
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             {notification.message}
           </p>
         )}
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {formatDate(notification.created_at)}
-        </p>
       </div>
       {action}
-    </div>
+    </li>
   );
 }
 
@@ -249,7 +259,7 @@ export default function NotificationPage() {
       )}
 
       {!loading && notificationsList.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <p className="text-sm">
             {unreadCount > 0 ? (
               <>
@@ -262,9 +272,10 @@ export default function NotificationPage() {
           </p>
 
           {unreadNotifications.length > 0 && (
-            <section className="rounded-lg border bg-card p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-base font-semibold">Unread</h3>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Unread</CardTitle>
+                <CardAction>
                 <Button
                   type="button"
                   variant="outline"
@@ -274,33 +285,44 @@ export default function NotificationPage() {
                 >
                   {markingAll ? "Marking..." : "Mark all as read"}
                 </Button>
-              </div>
-              {unreadNotifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  action={
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => void handleMarkAsRead(notification.id)}
-                      disabled={pending > 0 || markingAll}
-                    >
-                      {pending > 0 ? "Marking..." : "Mark as Read"}
-                    </Button>
-                  }
-                />
-              ))}
-            </section>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <ul className="-my-2">
+                  {unreadNotifications.map((notification) => (
+                    <NotificationItem
+                      key={notification.id}
+                      notification={notification}
+                      action={
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void handleMarkAsRead(notification.id)}
+                          disabled={pending > 0 || markingAll}
+                        >
+                          {pending > 0 ? "Marking..." : "Mark as Read"}
+                        </Button>
+                      }
+                    />
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           )}
 
           {readNotifications.length > 0 && (
-            <section className="rounded-lg border bg-card p-4">
-              <h3 className="mb-2 text-base font-semibold">Read</h3>
-              {readNotifications.map((notification) => (
-                <NotificationItem key={notification.id} notification={notification} />
-              ))}
-            </section>
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>Read</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="-my-2">
+                  {readNotifications.map((notification) => (
+                    <NotificationItem key={notification.id} notification={notification} />
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}

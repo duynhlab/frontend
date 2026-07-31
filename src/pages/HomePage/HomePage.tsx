@@ -14,11 +14,11 @@ const preloadProducts = () => {
 export default function HomePage() {
   return (
     <PageShell pad="none">
-      <section className="flex flex-col items-center gap-5 py-24 text-center">
+      <section className="flex flex-col items-center gap-4 py-8 text-center">
         <h1 className="text-4xl font-bold tracking-tight">
           Welcome to <span className="text-primary">DuynhLab</span> 👋
         </h1>
-        <p className="max-w-xl text-balance text-muted-foreground">
+        <p className="max-w-xl text-balance text-sm text-muted-foreground">
           Discover our curated collection of products. Browse, compare, and
           find exactly what you need.
         </p>

@@ -51,7 +51,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   });
 
   return (
-    <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-4">
+    <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-3">
       {errors.root?.server && (
         <Alert variant="destructive" role="alert">
           <AlertTitle>{errors.root.server.message}</AlertTitle>

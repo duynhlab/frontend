@@ -95,19 +95,20 @@ export default function LoginPage() {
 
   return (
     <PageShell width="narrow" pad="roomy">
-      <Card>
+      <Card size="sm">
         <CardHeader>
           <Link
             to="/"
-            className="mb-1 text-sm text-muted-foreground hover:text-foreground"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             ← Back
           </Link>
-          <CardTitle>
-            <h2 className="text-xl font-semibold">
-              {mode === "login" ? "Login" : "Register"}
-            </h2>
-          </CardTitle>
+          <h2
+            data-slot="card-title"
+            className="font-heading text-base font-medium"
+          >
+            {mode === "login" ? "Login" : "Register"}
+          </h2>
           <CardDescription className="font-mono text-xs">
             API: POST /auth/v1/public/auth/{mode === "login" ? "login" : "register"}
           </CardDescription>
@@ -119,7 +120,7 @@ export default function LoginPage() {
             <RegisterForm onSuccess={handleSuccess} />
           )}
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-3 text-center text-sm text-muted-foreground">
             {mode === "login" ? (
               <>
                 No account?{" "}

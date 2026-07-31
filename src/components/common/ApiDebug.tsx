@@ -13,7 +13,7 @@ export default function ApiDebug({
   }
 
   return (
-    <details className="mt-4 rounded-md border bg-card p-2 text-xs">
+    <details className="mt-3 rounded-md border bg-card p-2 text-xs">
       <summary className="cursor-pointer text-muted-foreground">{label}</summary>
       <pre className="mt-2 overflow-x-auto p-2">{JSON.stringify(data, null, 2)}</pre>
     </details>
