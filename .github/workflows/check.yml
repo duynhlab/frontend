@@ -128,8 +128,14 @@ jobs:
     if: startsWith(github.head_ref, 'refactor/shadcn')
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          # pull_request checks out a detached merge commit; the branch itself
+          # is needed to push the regenerated PNGs back.
+          ref: ${{ github.head_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -151,6 +157,21 @@ jobs:
 
       - name: Regenerate visual baselines
         run: npx playwright test --project=visual --project=visual-mobile --update-snapshots
+
+      # Committed from the job rather than downloaded as an artifact: the
+      # artifact lives on Azure blob storage, which is unreachable from the
+      # authoring machine's network.
+      - name: Commit baselines
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -- e2e/__screenshots__
+          if git diff --cached --quiet; then
+            echo "baselines already current"
+            exit 0
+          fi
+          git commit -m 'Regenerate CI-Linux visual baselines for the density refactor'
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Upload baselines
         uses: actions/upload-artifact@v4
