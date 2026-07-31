@@ -9,7 +9,9 @@ import { formatCurrency } from "@/lib/format";
  */
 export default function CartSummary({ cart }: { cart: Cart }) {
   return (
-    <Card className="h-fit">
+    /* lg:self-start is required, not decorative: grid items stretch by
+       default and a stretched item cannot stick. */
+    <Card size="sm" className="lg:sticky lg:top-(--sticky-top) lg:self-start">
       <CardHeader>
         <CardTitle>Order Summary</CardTitle>
       </CardHeader>

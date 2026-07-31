@@ -177,7 +177,7 @@ try {
     await navClick(page, "Cart");
     await page.waitForTimeout(600);
     bucket.cartFilled = await page.evaluate(() => {
-      const rows = [...document.querySelectorAll("[data-slot=card-content] > div")].filter((d) =>
+      const rows = [...document.querySelectorAll("[data-slot=card-content] li")].filter((d) =>
         /each/.test(d.textContent ?? ""),
       );
       const cards = [...document.querySelectorAll("[data-slot=card]")];

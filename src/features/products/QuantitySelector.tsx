@@ -3,6 +3,7 @@ import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -10,6 +11,12 @@ interface QuantitySelectorProps {
   min?: number;
   /** Upper clamp (e.g. available stock). Unbounded when omitted. */
   max?: number;
+  /**
+   * `sr-only` hides the label visually but keeps it in the accessibility tree.
+   * Used in the cart, where the visible "Quantity:" text made the control wide
+   * enough to force the row to wrap.
+   */
+  labelPosition?: "inline" | "sr-only";
 }
 
 /**
@@ -21,6 +28,7 @@ export default function QuantitySelector({
   onChange,
   min = 1,
   max,
+  labelPosition = "inline",
 }: QuantitySelectorProps) {
   const inputId = useId();
   const clamp = (value: number) =>
@@ -28,7 +36,9 @@ export default function QuantitySelector({
 
   return (
     <div className="flex items-center gap-2">
-      <Label htmlFor={inputId}>Quantity:</Label>
+      <Label htmlFor={inputId} className={cn(labelPosition === "sr-only" && "sr-only")}>
+        Quantity:
+      </Label>
       <Button
         type="button"
         variant="outline"
@@ -43,7 +53,7 @@ export default function QuantitySelector({
         id={inputId}
         type="number"
         inputMode="numeric"
-        className="w-16 text-center"
+        className={cn("text-center", labelPosition === "sr-only" ? "w-14" : "w-16")}
         value={quantity}
         min={min}
         {...(max !== undefined && { max })}

@@ -106,27 +106,32 @@ export default function CartPage() {
       )}
 
       {!loading && !error && items.length === 0 && (
-        <EmptyState message="Your cart is empty">
+        <EmptyState size="sm" className="mx-auto max-w-md" message="Your cart is empty">
           <Button variant="outline" render={<Link to="/products">Browse Products</Link>} />
         </EmptyState>
       )}
 
       {!loading && !error && cart && items.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
-          <Card>
+        /* A fixed summary track, not 1fr: at 2fr_1fr the summary was over
+           400px wide for three money rows, starving the item columns. */
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <Card size="sm">
             <CardHeader>
               <CardTitle>Items ({cart.item_count})</CardTitle>
             </CardHeader>
             <CardContent>
-              {items.map((item) => (
-                <CartItemRow
-                  key={item.id}
-                  item={item}
-                  busy={actionItemId === item.id}
-                  onQuantityChange={handleUpdateQuantity}
-                  onRemove={handleRemoveItem}
-                />
-              ))}
+              {/* -my-3 cancels the first and last row's own py-3. */}
+              <ul className="-my-3">
+                {items.map((item) => (
+                  <CartItemRow
+                    key={item.id}
+                    item={item}
+                    busy={actionItemId === item.id}
+                    onQuantityChange={handleUpdateQuantity}
+                    onRemove={handleRemoveItem}
+                  />
+                ))}
+              </ul>
             </CardContent>
           </Card>
 

@@ -14,9 +14,9 @@ export class CartPage {
   }
 
   itemRow(productName: string | RegExp): Locator {
-    return this.page
-      .getByText(productName)
-      .locator("xpath=ancestor::div[contains(@class, 'justify-between')][1]");
+    // Anchored on the semantic list item, not on a Tailwind class: the previous
+    // xpath keyed off `justify-between`, which the density refactor removed.
+    return this.page.getByRole("listitem").filter({ hasText: productName });
   }
 
   removeButton(): Locator {
