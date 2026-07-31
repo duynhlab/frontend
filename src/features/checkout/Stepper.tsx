@@ -16,7 +16,7 @@ interface StepperProps {
  */
 export default function Stepper({ labels, current, onStepClick, disabled }: StepperProps) {
   return (
-    <ol aria-label="Checkout progress" className="mb-6 flex items-center gap-2">
+    <ol aria-label="Checkout progress" className="mb-4 flex items-center gap-2">
       {labels.map((label, i) => {
         const stepNo = i + 1;
         const isActive = stepNo === current;
@@ -45,7 +45,13 @@ export default function Stepper({ labels, current, onStepClick, disabled }: Step
               >
                 {isDone ? <CheckIcon className="size-3.5" /> : stepNo}
               </span>
-              <span>{label}</span>
+                {/*
+                sr-only rather than hidden below `sm`: four labels plus their
+                circles and connectors measured 439px against a 328px content
+                box, which was the page's horizontal overflow. The label stays
+                in the accessibility tree, so each step keeps its name.
+              */}
+              <span className="max-sm:sr-only">{label}</span>
             </button>
             {stepNo < labels.length && (
               <span aria-hidden="true" className="h-px flex-1 bg-border" />

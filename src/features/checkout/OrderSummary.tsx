@@ -43,12 +43,13 @@ export default function OrderSummary({
   };
 
   return (
-    <Card className="h-fit">
+    /* lg:self-start: a stretched grid item cannot stick. */
+    <Card size="sm" className="lg:sticky lg:top-(--sticky-top) lg:self-start">
       <CardHeader>
         <CardTitle>Order summary</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <ul className="space-y-2 text-sm">
+      <CardContent className="space-y-3">
+        <ul className="space-y-1 text-sm">
           {session.items.map((it) => (
             <li key={it.product_id} className="flex justify-between gap-2">
               <span>

@@ -18,7 +18,7 @@ export default function PaymentStep({ token, onChange, onSubmit, busy }: Payment
         e.preventDefault();
         onSubmit();
       }}
-      className="space-y-4"
+      className="max-w-2xl space-y-3"
     >
       <FieldSet>
         <FieldLegend>Payment method</FieldLegend>

@@ -275,6 +275,8 @@ export default function CheckoutFlowPage() {
 
       {loadError === "empty-cart" && (
         <EmptyState
+          size="sm"
+          className="mx-auto max-w-md"
           icon="🛒"
           message="Your cart is empty — add items before checking out."
         />
@@ -286,10 +288,10 @@ export default function CheckoutFlowPage() {
 
       {/* Success */}
       {session?.status === "completed" && (
-        <Card className="mx-auto max-w-md text-center">
-          <CardContent className="space-y-4 pt-6">
-            <div aria-hidden="true" className="text-4xl">✅</div>
-            <h3 className="text-lg font-semibold">Order placed!</h3>
+        <Card size="sm" className="mx-auto max-w-md text-center">
+          <CardContent className="space-y-3">
+            <div aria-hidden="true" className="text-xl">✅</div>
+            <h3 className="text-base font-semibold">Order placed!</h3>
             <p className="text-sm text-muted-foreground">
               Order #{session.order_id} · {formatCurrency(session.total)}
             </p>
@@ -343,9 +345,10 @@ export default function CheckoutFlowPage() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
-            <Card>
-              <CardContent className="pt-6">
+          {/* Same split as the cart: a fixed summary track, not 1fr. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <Card size="sm">
+              <CardContent>
                 {step === 1 && (
                   <AddressStep
                     address={address}

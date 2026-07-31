@@ -49,7 +49,7 @@ export default function AddressStep({ address, onSubmit, busy }: AddressStepProp
   });
 
   return (
-    <form onSubmit={(e) => void submit(e)} noValidate className="space-y-4">
+    <form onSubmit={(e) => void submit(e)} noValidate className="max-w-2xl space-y-3">
       <h3 className="text-base font-semibold">Shipping address</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {FIELDS.map((spec) => (

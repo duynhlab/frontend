@@ -11,7 +11,7 @@ interface ReviewStepProps {
 export default function ReviewStep({ session, onConfirm, busy }: ReviewStepProps) {
   const a = session.address;
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl space-y-3">
       <h3 className="text-base font-semibold">Review &amp; confirm</h3>
       {a && (
         <p className="text-sm">
