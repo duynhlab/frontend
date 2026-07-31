@@ -120,6 +120,45 @@ jobs:
             test-results-mock-mode/
           retention-days: 7
 
+  # TEMPORARY — remove once the regenerated baselines are committed.
+  # `update-visual-baselines.yml` cannot be dispatched until it exists on the
+  # default branch, so the density refactor's baselines are regenerated here.
+  # Never generate them from macOS: font rasterization differs from CI Linux.
+  update-visual-baselines-temp:
+    if: startsWith(github.head_ref, 'refactor/shadcn')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-1.61.1
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Regenerate visual baselines
+        run: npx playwright test --project=visual --project=visual-mobile --update-snapshots
+
+      - name: Upload baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: e2e/__screenshots__/
+          retention-days: 7
+
   agent-browser:
     # Dogfood gate for the migration branch; demote to nightly after cutover
     # (plan §17.2) rather than taxing every small PR.
