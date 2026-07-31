@@ -1,63 +1,41 @@
-import { useId } from "react";
+import { cn } from "@/lib/utils";
 
 interface PlaceholderImageProps {
   size?: "small" | "medium" | "large";
   label?: string;
 }
 
-const DIMENSIONS: Record<NonNullable<PlaceholderImageProps["size"]>, number> = {
-  small: 100,
-  medium: 400,
-  large: 600,
+const ICON_SIZE: Record<NonNullable<PlaceholderImageProps["size"]>, string> = {
+  small: "text-xl",
+  medium: "text-3xl",
+  large: "text-4xl",
 };
 
 /**
  * PlaceholderImage — static placeholder for all product images.
- * The gradient id is instance-unique (useId): the legacy version reused one
- * hard-coded id, producing duplicate DOM ids across a grid.
+ *
+ * Not an SVG: a square `viewBox` letterboxes inside the 4:3 media boxes under
+ * the default `preserveAspectRatio`, which would put a small image back inside
+ * a void — the exact complaint this refactor is fixing. A plain box does no
+ * aspect math and fills whatever its parent gives it, at any ratio.
+ *
+ * A real image is a drop-in replacement: `<img className="h-full w-full
+ * object-cover">` occupies the same box with the same cropping contract, and
+ * the ratio stays owned solely by the parent.
  */
 export default function PlaceholderImage({
   size = "medium",
   label = "Product",
 }: PlaceholderImageProps) {
-  const gradientId = useId();
-  const dim = DIMENSIONS[size];
-
   return (
-    <svg
-      viewBox={`0 0 ${dim} ${dim}`}
-      fill="none"
-      className="h-full w-full"
+    <div
       role="img"
       aria-label={`${label} placeholder image`}
+      className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary to-card"
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--secondary)" />
-          <stop offset="100%" stopColor="var(--card)" />
-        </linearGradient>
-      </defs>
-      <rect width={dim} height={dim} fill={`url(#${gradientId})`} />
-      <text
-        x={dim / 2}
-        y={dim * 0.45}
-        textAnchor="middle"
-        fill="var(--muted-foreground)"
-        fontSize={dim / 8}
-        aria-hidden="true"
-      >
+      <span aria-hidden="true" className={cn("text-muted-foreground", ICON_SIZE[size])}>
         📦
-      </text>
-      <text
-        x={dim / 2}
-        y={dim * 0.6}
-        textAnchor="middle"
-        fill="var(--muted-foreground)"
-        fontSize={dim / 18}
-        aria-hidden="true"
-      >
-        {label}
-      </text>
-    </svg>
+      </span>
+    </div>
   );
 }
