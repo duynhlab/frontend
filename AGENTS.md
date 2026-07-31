@@ -80,6 +80,55 @@ regression tests and `agent-browser` for exploratory/dogfood validation.
   cancel actions or severe errors; muted = secondary text and must keep AA
   contrast.
 
+### Density contract
+
+The app is a dense technical tool, not a landing page. The rules below are what
+keep it that way; they are enforceable, unlike the general "don't hard-code
+spacing" line above.
+
+- **`--spacing` stays `0.25rem` and must never be overridden.** It scales
+  control heights, icon squares, and shadcn's `scroll-fade`/`shimmer`
+  utilities, so changing it is a global multiplicative squeeze — the same class
+  of change as `zoom` or `transform: scale`, which are banned outright. Density
+  comes from choosing lower steps per component, never from rescaling the unit.
+- **Layout rhythm uses steps `1, 2, 3, 4, 6, 8` only** (4/8/12/16/24/32px).
+  `px-2.5` (10px) is the single sanctioned off-scale value, for control inline
+  padding. Sub-4px optical nudges inside one primitive are fine (`gap-0.5`,
+  `-mx-1`). Box dimensions (`h-*`, `max-w-*`) are exempt, but must use a token
+  when they are coupled across files.
+- **Type scale.** `text-xs` 12/16 metadata · `text-sm` 14/20 body and all
+  control text · `text-base` 16/22 card titles · `text-lg`/`xl`/`2xl` section
+  headings · `text-2xl`/`3xl`/`4xl` page headings, capped at 30px. `text-xs`
+  and `text-sm` are **frozen**: they carry nearly all usage and all control
+  text, so changing them is never a local decision.
+- **Radius roles.** `rounded-md` 4px interior rows and chips inside a popup ·
+  `rounded-lg` 6px controls **and anchored popups** (a select popup matches its
+  trigger, not a card) · `rounded-xl` 8px free-floating surfaces (card, dialog,
+  sheet, toast) · `rounded-full` badges, status and tags only.
+- **Control floor.** Minimum interactive box 24px (WCAG 2.5.8), 32px preferred.
+  Isolated icon controls reach a 44px hit area with an `after:` inset plus
+  `relative` on the box — never by growing the box. `--control-height*` and
+  `--touch-target` are the single source for those sizes.
+- **Page width.** Every page renders inside `components/layout/PageShell`.
+  Tailwind's `container` is **banned**: it caps at 1536px, which is what held
+  the catalog to four columns and left 256px of dead gutter at 2048px.
+- **Any new `--spacing-*` theme value must also be registered with
+  tailwind-merge in `src/lib/utils.ts`.** tailwind-merge only collapses classes
+  it can classify; a bare word like `control` matches none of its validators, so
+  an unregistered `h-control` survives next to a call site's `h-auto` and the
+  cascade — not the override — decides the height.
+- **Coupled pairs that must move together.** `alert-dialog` content `p-4` ↔
+  footer `-mx-4 -mb-4 … p-4`; `alert` `px-3` ↔ `AlertAction right-3`; `field`
+  legend `mb-1` ↔ description `-mt-1`; `ProductCard` height ↔ its
+  `containIntrinsicSize`; `PRODUCT_GRID_CLASS` ↔ `GridSkeleton`;
+  `ProductDetailPage`'s media cap ↔ `DetailSkeleton`.
+- **Order-dependent utilities.** Two utilities of equal specificity are decided
+  by their position in the compiled stylesheet, not by the order you wrote them.
+  `.rounded-md` sorts after `.rounded-lg`, so a size variant adding
+  `rounded-md` overrides a base `rounded-lg` while an arbitrary
+  `rounded-[min(...)]` loses to it. Verify a radius or sizing override actually
+  applies before assuming it does.
+
 ## shadcn/ui ownership
 
 - `src/components/ui/` contains **shadcn primitives only** (or deliberate,
@@ -97,6 +146,14 @@ regression tests and `agent-browser` for exploratory/dogfood validation.
   primitive. Simple components may use primitives directly, but a repeated
   business pattern must be wrapped once in `common/` or a feature — never
   re-derived per page.
+- **Density edits to `ui/` go through theme tokens or a CVA `size` variant, never
+  per-call-site class overrides.** A sprinkled `compact` class cannot be
+  reasoned about and `shadcn add` would silently revert it. `Card size="sm"` and
+  `Empty size="sm"` exist for exactly this.
+- Dead `dark:` utilities and the two zero-call-site files
+  (`dropdown-menu.tsx`, `pagination.tsx`) stay for registry parity: pruning them
+  creates permanent drift from upstream and lets `shadcn add` quietly
+  reintroduce the duplication they were edited out of.
 
 ## Notifications (toast)
 
@@ -229,6 +286,28 @@ npm run test:agent:cutover  # agent-browser dogfood: smoke + a11y + visual
   cart, checkout, toast) also require visual, accessibility, error, and network
   cases — happy path alone is not acceptable.
 - **No critical/serious accessibility violations** are allowed for changed flows.
+- **Touch-target size has its own gate** (`e2e/regression/target-size.spec.ts`).
+  The main axe suite filters on `wcag2a`/`wcag2aa`, which silently excludes
+  `target-size` (tagged `wcag22aa`), so any control-height change would
+  otherwise be unguarded. It runs at mobile metrics as well as desktop, because
+  the rule's spacing exemption depends on the rendered width.
+- **Layout density has its own gate** (`e2e/regression/density.spec.ts`): grid
+  column counts, card and row height bands, media bands, the reviews fold
+  offset, empty-state heights, chrome heights and zero horizontal overflow, at
+  all 8 review viewports (360×800, 390×844, 768×1024, 1024×768, 1366×768,
+  1440×900, 1920×1080, 2048×1080). It asserts `boundingBox()` and computed
+  style, so unlike the visual snapshots it is platform-independent.
+- **Visual snapshots are CI-Linux-canonical** (`snapshotPathTemplate` carries no
+  `{platform}` segment). macOS font rasterization differs by ~1% of pixels, so
+  they always fail locally and **must never be regenerated from a Mac** — use
+  the `update-visual-baselines` workflow, and land the result as its own
+  reviewed commit. When an axe scan targets a dialog, wait for
+  `opacity: 1` rather than mere visibility: `toBeVisible()` resolves mid
+  entrance-animation, where axe measures every colour blended against the
+  backdrop and reports false contrast failures.
+- Never bundle a data page-size change (`PRODUCTS_PER_PAGE`) with a layout
+  change — three specs assert `toHaveCount(24)` and the failure would read as a
+  layout regression.
 - Use `agent-browser` for dogfood/exploratory validation (a11y snapshots,
   screenshots, console/network inspection). Re-snapshot after every DOM change.
   Any regression agent-browser finds must be converted into a Playwright test

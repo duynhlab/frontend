@@ -150,6 +150,92 @@ layer; all comfortably inside "good" thresholds. No regression to investigate.
   notification pacing, Idempotency-Key lifecycle, SWR keys/intervals,
   mock↔e2e parity, config isolation, open-redirect guard, toast singleton.
 
+## Compact-density refinement (`compact-before/` → `compact-after/`, 2026-07-31)
+
+A second phase on the same branch: the cutover shipped a correct and accessible
+UI, but a loose one — stock Tailwind spacing with no density contract, so the
+app read like a landing page. Measured with `scripts/density/measure.mjs`
+against a mock-mode dev server at all 8 review viewports, before and after.
+
+### Measured before → after
+
+| Viewport | Catalog cols | Card box | Cards in fold | Detail media | "Customer Reviews" y | Detail page height | Footer |
+|---|---|---|---|---|---|---|---|
+| 360×800 | 1 → **2** | 328×396 → **160×203** | 2 → **8** | 328×328 → **328×246** | 766 → **656** | 1384 → **1092** | 85 → **57** |
+| 390×844 | 1 → **2** | 358×426 → **175×214** | 2 → **8** | 358×358 → **358×269** | 796 → **679** | 1414 → **1115** | 85 → **57** |
+| 768×1024 | 2 → **3** | 362×430 → **237×260** | 6 → **12** | 356×356 → **520×390** | 522 → 784 | 1140 → 1172 | 85 → **41** |
+| 1024×768 | 3 → 3 | 323×391 → **323×325** | 6 → 6 | 484×484 → **520×390** | 650 → **544** | 1268 → **932** | 85 → **41** |
+| 1366×768 | 4 → 4 | 303×371 → 325×326 | 8 → 8 | 612×612 → **520×390** | 778 → **544** | 1396 → **932** | 85 → **41** |
+| 1440×900 | 4 → **5** | 303×371 → **272×287** | 12 → **15** | 612×612 → **520×390** | 778 → **544** | 1396 → **932** | 85 → **41** |
+| 1920×1080 | 4 → **6** | 367×435 → **283×295** | 12 → **24** | 740×740 → **520×390** | 906 → **544** | 1524 → **1080** | 85 → **41** |
+| 2048×1080 | 4 → **6** | 367×435 → **283×295** | 12 → **24** | 740×740 → **520×390** | 906 → **544** | 1524 → **1080** | 85 → **41** |
+
+Empty states (1440×900): "No reviews yet" 110×1248 → **96×768**; empty cart
+158×1248 → **114×448**; 404 231×1248 → **164×352**; the unauthenticated review
+prompt (200×1248) is no longer an `Empty` at all — it is a 1-row inline prompt,
+because a gated action is not an absence of data.
+
+**Horizontal overflow: 2 → 0.** `/checkout` overflowed at 360 and 390px
+(scrollWidth 439) *before* this work; the Stepper's four labels could not shrink
+below min-content. Now zero at every viewport.
+
+### Deliberate trade-off
+
+At 768×1024 the detail page is 32px taller and the reviews heading moves from
+y=522 to y=784. The media went from a 356px square in two columns to a capped
+520×390 in one, which puts it inside the required 440–560 band; holding two
+columns at that width left the info side about 280px. Both acceptance criteria
+still pass (media in band, heading above a 1024px fold), and every other
+viewport improves.
+
+### Gates
+
+| Gate | Result |
+|---|---|
+| `npm run lint` / `typecheck` / `build` | pass — 0 errors (21 pre-existing advisory warnings) |
+| `npm run test:e2e` | 112 passed, 2 skipped-by-design |
+| `npm run test:e2e:mock-mode` | 3 passed |
+| `scripts/ci/migration-guards.sh` | all 5 pass |
+| agent-browser smoke (`compact-after/`) | guest / customer / checkout: runtime clean |
+| agent-browser a11y, **gate ON** | **clean — 0 critical/serious on all 9 routes** |
+| CI (`Check`) | **all jobs green**, including e2e-regression on regenerated baselines |
+
+New gates this phase: `e2e/regression/target-size.spec.ts` (WCAG 2.5.8 — the
+main axe suite's tag filter silently excluded it) and
+`e2e/regression/density.spec.ts` (30 geometry assertions across the 8
+viewports).
+
+### Intended visual diffs (all 14 baselines regenerated on CI Linux)
+
+Radius retune (controls 6px, surfaces 8px, badges an explicit pill); line
+heights tightened above `text-sm`; `text-3xl`/`4xl` capped at 28/30px; empty
+states floored and their actions laid out in a row; `container` replaced by
+explicit width tiers; catalog on `minmax` tracks with 4:3 media; detail media
+capped; cart rows on a shared grid with an 80×60 thumbnail; sticky cart and
+checkout summaries; footer single-row.
+
+### Bugs found and fixed while measuring
+
+1. `/checkout` horizontal overflow at 360/390px (pre-existing) — Stepper labels.
+2. The a11y suite's dialog scan ran mid entrance-animation at `opacity: 0.07`,
+   so axe measured blended colours and reported a false 4.29:1 contrast failure;
+   it passed on CI only by winning a race.
+3. `cn()` did not register the new `--spacing-*` names with tailwind-merge, so
+   `h-control` survived alongside LoginPage's `h-auto` override — a 321px visual
+   diff. Same latent hazard already existed for `h-header`.
+4. `scripts/density/measure.mjs` had no ESLint config entry; its 34 `no-undef`
+   errors would have failed the quality job.
+5. `cart.page.ts`'s `itemRow()` was dead code keyed off a Tailwind class.
+
+### Known, not fixed (out of the approved density scope)
+
+- **`ProductDetailPage` invalidates the `cart-count` SWR key but not `cart`**, so
+  returning to `/cart` inside `useApiQuery`'s 2s `dedupingInterval` serves a
+  stale empty list. `CheckoutFlowPage` invalidates both. This is a behaviour
+  change, which the density plan excludes, and needs its own task.
+- A Base UI console error on `/cart`: `CartSummary` renders a `Button` as a
+  non-`<button>` while `nativeButton` is true.
+
 ## Pre-cutover checklist (remaining)
 
 1. Run the gateway smoke against local-stack/staging Kong
