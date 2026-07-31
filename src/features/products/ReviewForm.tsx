@@ -82,7 +82,7 @@ export default function ReviewForm({ productId, userId, onSubmitted }: ReviewFor
   });
 
   return (
-    <form onSubmit={(e) => void onSubmit(e)} noValidate className="max-w-md space-y-4">
+    <form onSubmit={(e) => void onSubmit(e)} noValidate className="max-w-md space-y-3">
       <Field>
         <FieldLabel htmlFor="review-rating">Rating</FieldLabel>
         <Controller

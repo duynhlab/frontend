@@ -64,14 +64,19 @@ export function RouteFallback() {
 /** DetailSkeleton — loading state for the product detail page. */
 export function DetailSkeleton() {
   return (
-    <div aria-busy="true" className="mt-3 grid grid-cols-1 gap-6 md:grid-cols-2">
-      <Skeleton className="aspect-square w-full" />
+    // Mirrors ProductDetailPage's media cap and column template, so the row
+    // height is the same before and after the payload arrives.
+    <div aria-busy="true" className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,520px)_1fr]">
+      <Skeleton className="mx-auto aspect-[4/3] w-full max-w-[520px] lg:mx-0" />
       <div className="space-y-3" aria-hidden="true">
-        <Skeleton className="h-8 w-3/5" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-[30px] w-3/5" />
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className="h-5 w-4/5" />
+        <Skeleton className="h-[26px] w-24" />
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-9 w-36" />
       </div>
     </div>
   );

@@ -141,8 +141,14 @@ export default function ProductDetailPage() {
 
       {!loading && !error && data?.product && (
         <>
-          <div className="mt-3 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="aspect-square bg-secondary">
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,520px)_1fr]">
+            {/*
+              The media is capped rather than sized by its column. Splitting
+              into two columns before `lg` left the info side around 280px,
+              and letting the media fill a single column is what produced the
+              giant square panel on tablet.
+            */}
+            <div className="mx-auto aspect-[4/3] w-full max-w-[520px] overflow-hidden rounded-lg bg-secondary lg:mx-0">
               <PlaceholderImage size="large" label="Product Image" />
             </div>
 
@@ -153,7 +159,8 @@ export default function ProductDetailPage() {
               <p className="text-sm text-muted-foreground">
                 {data.product.description}
               </p>
-              <p className="text-2xl font-semibold text-primary">
+              {/* One step below the name: the price should not compete with it. */}
+              <p className="text-xl font-semibold text-primary">
                 {formatCurrency(data.product.price)}
               </p>
 
@@ -190,29 +197,32 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Reviews */}
-          <section id="reviews" className="mt-10">
-            <h2 className="text-lg font-semibold">Customer Reviews</h2>
+          <section id="reviews" className="mt-6 max-w-3xl">
+            <h2 className="text-base font-semibold">Customer Reviews</h2>
 
             {reviews.length > 0 ? (
               <>
-                <div className="mt-3 flex items-center gap-4 rounded-lg border bg-card p-4">
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">
+                    <span className="text-xl font-semibold">
                       {averageRating.toFixed(1)}
                     </span>
-                    <span className="text-muted-foreground">/5</span>
+                    <span className="text-sm text-muted-foreground">/5</span>
                   </div>
-                  <div className="space-y-1">
-                    <StarRating value={averageRating} />
-                    <p className="text-sm text-muted-foreground">
-                      {reviews.length} review{reviews.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
+                  <StarRating value={averageRating} />
+                  <p className="text-sm text-muted-foreground">
+                    {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                  </p>
                 </div>
 
-                <ul className="mt-4 space-y-4">
+                {/*
+                  One bordered surface with dividers, not N bordered cards: a
+                  card per review paid for its own border and padding on every
+                  row and stacked another 16px gap between them.
+                */}
+                <ul className="mt-3 divide-y rounded-lg border bg-card">
                   {reviews.map((review) => (
-                    <li key={review.id} className="rounded-lg border bg-card p-4">
+                    <li key={review.id} className="p-3">
                       <div className="flex items-center gap-3">
                         <span
                           aria-hidden="true"
@@ -220,7 +230,7 @@ export default function ProductDetailPage() {
                         >
                           {getInitial(review.username)}
                         </span>
-                        <div className="flex-1">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
                           <p className="text-sm font-medium">
                             {review.username || "Guest"}
                           </p>
@@ -231,9 +241,10 @@ export default function ProductDetailPage() {
                         <StarRating value={review.rating} />
                       </div>
                       {review.title && (
-                        <h4 className="mt-2 text-sm font-semibold">{review.title}</h4>
+                        <h4 className="mt-1 text-sm font-semibold">{review.title}</h4>
                       )}
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      {/* ~65ch: the comment previously ran the full page width. */}
+                      <p className="mt-1 max-w-prose text-sm text-muted-foreground">
                         {review.comment}
                       </p>
                     </li>
@@ -247,30 +258,37 @@ export default function ProductDetailPage() {
             )}
 
             {/* Write a Review */}
-            <Separator className="my-6" />
-            <h3 className="text-base font-semibold">Write a Review</h3>
+            <Separator className="my-4" />
+            <h3 className="text-sm font-semibold">Write a Review</h3>
             <div className="mt-3">
               {!isAuthenticated ? (
-                <EmptyState
-                  icon="🔐"
-                  message="Please log in or sign up to write a review."
-                >
-                  <Button
-                    onClick={() =>
-                      void navigate(`/login?mode=login&returnTo=${reviewsReturnTo}`)
-                    }
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      void navigate(`/login?mode=register&returnTo=${reviewsReturnTo}`)
-                    }
-                  >
-                    Register
-                  </Button>
-                </EmptyState>
+                /*
+                  An inline prompt, not an EmptyState: this is a gated action,
+                  not an absence of data, so the "no data" primitive was the
+                  wrong one — and it stacked its two buttons in a column.
+                */
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed p-3">
+                  <p className="text-sm text-muted-foreground">
+                    Please log in or sign up to write a review.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        void navigate(`/login?mode=login&returnTo=${reviewsReturnTo}`)
+                      }
+                    >
+                      Login
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        void navigate(`/login?mode=register&returnTo=${reviewsReturnTo}`)
+                      }
+                    >
+                      Register
+                    </Button>
+                  </div>
+                </div>
               ) : hasReviewed ? (
                 <p className="text-sm text-muted-foreground">
                   You have already reviewed this product.
