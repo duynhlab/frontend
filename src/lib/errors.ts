@@ -60,8 +60,12 @@ const USER_FRIENDLY_MAP: Record<string, string> = {
 };
 
 /**
- * Error CODES the checkout funnel returns (stable contract — unlike message
- * strings, codes are safe to key on).
+ * Error CODES the backend returns (stable contract — unlike message strings,
+ * codes are safe to key on).
+ *
+ * Note the precedence in toAppError: once a code is present the status
+ * fallback is never consulted, so a code missing from this map surfaces as the
+ * bare generic message. Any new coded error MUST be added here.
  */
 const CODE_MAP: Record<string, string> = {
   STOCK_UNAVAILABLE:
@@ -77,6 +81,11 @@ const CODE_MAP: Record<string, string> = {
     "This step is not available for the current checkout state — refreshing the session.",
   CONFLICT: "Your cart is empty — add items before checking out.",
   SESSION_EXPIRED: "Your checkout session expired — starting a fresh one.",
+  // Order cancellation (RFC-0021). Both codes mean the same thing to the user
+  // — the window has closed — and differ only in which server-side check
+  // refused: the order FSM, or the shipment having already left.
+  ORDER_NOT_CANCELLABLE: "This order can no longer be cancelled.",
+  SHIPMENT_ALREADY_DISPATCHED: "This order can no longer be cancelled.",
 };
 
 /**
