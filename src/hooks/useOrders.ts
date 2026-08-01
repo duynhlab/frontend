@@ -15,8 +15,9 @@ export function useOrders({ page = 1, pageSize = 10, enabled = true } = {}): {
   totalPages: number;
   loading: boolean;
   error: AppError | null;
+  refresh: () => void;
 } {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     enabled ? (["orders", { page, pageSize }] as const) : null,
     ([, params]) => getOrders({ page: params.page, page_size: params.pageSize }),
     {
@@ -34,5 +35,9 @@ export function useOrders({ page = 1, pageSize = 10, enabled = true } = {}): {
     totalPages: data?.total_pages ?? (total ? Math.ceil(total / pageSize) : 0),
     loading: isLoading,
     error: error === undefined ? null : toAppError(error),
+    // Bound revalidate for callers that change order state (e.g. cancel).
+    // The key is a tuple, so `globalMutate("orders")` would not match it —
+    // this is the only way to invalidate the list from outside.
+    refresh: () => void mutate(),
   };
 }

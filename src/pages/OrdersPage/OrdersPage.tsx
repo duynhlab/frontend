@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { getOrderDetails } from "@/api/orderApi";
+import { cancelOrder, getOrderDetails } from "@/api/orderApi";
 import type { OrderDetails, OrderStatus } from "@/api/types/order";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrders } from "@/hooks/useOrders";
 import { notify } from "@/lib/notifications";
 import { toAppError } from "@/lib/errors";
+import { canCancelOrder } from "@/lib/orderPolicy";
 import { formatCurrency } from "@/lib/format";
 import PageHeader from "@/components/common/PageHeader";
 import AppPagination from "@/components/common/AppPagination";
 import LoadingState from "@/components/common/LoadingState";
 import EmptyState from "@/components/common/EmptyState";
+import ConfirmAction from "@/components/common/ConfirmAction";
 import AppError from "@/components/common/AppError";
 import ApiDebug from "@/components/common/ApiDebug";
 import { Badge } from "@/components/ui/badge";
@@ -20,16 +22,21 @@ import { cn } from "@/lib/utils";
 import PageShell from "@/components/layout/PageShell";
 
 /**
- * Status → tone class. Exhaustive over OrderStatus (noFallthroughCasesInSwitch
- * guards the union); shipment/payment statuses arrive as plain strings and
- * fall back to muted.
+ * Status → tone class, covering OrderStatus plus the shipment/payment statuses
+ * that arrive as plain strings.
+ *
+ * The `default` arm means the compiler will NOT flag a newly added OrderStatus
+ * here — an unhandled state silently renders muted. Keep this in step with the
+ * union by hand; `orders-cancel.spec.ts` asserts the cancel-flow tones.
  */
 function statusToneClass(status: OrderStatus | string): string {
   switch (status as OrderStatus) {
     case "pending":
+    case "cancelling":
     case "partially_refunded":
       return "text-warning";
     case "processing":
+    case "confirmed":
     case "in_transit":
     case "authorized":
       return "text-info";
@@ -41,7 +48,9 @@ function statusToneClass(status: OrderStatus | string): string {
     case "refunded":
       return "text-primary";
     case "failed":
+    case "manual_review":
       return "text-destructive";
+    case "cancelled":
     case "voided":
       return "text-muted-foreground";
     default:
@@ -74,11 +83,13 @@ export default function OrdersPage() {
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const PAGE_SIZE = 10;
 
-  const { orders: ordersList, total, totalPages, loading, error } = useOrders({
+  const { orders: ordersList, total, totalPages, loading, error, refresh } = useOrders({
     page,
     pageSize: PAGE_SIZE,
     enabled: isAuthenticated,
   });
+
+  const [cancelling, setCancelling] = useState(false);
 
   const handlePageChange = (newPage: number) => {
     setSearchParams({ page: String(newPage) });
@@ -98,6 +109,43 @@ export default function OrdersPage() {
       notify.error(toAppError(err, "Cannot load orders").message);
     } finally {
       setOrderDetailsLoading(false);
+    }
+  };
+
+  /**
+   * Cancellation is accepted asynchronously, so the response only tells us the
+   * request was taken. Re-read the details and the list afterwards so the
+   * cancelling → cancelled progression renders from server truth rather than
+   * an optimistic guess.
+   *
+   * Never rethrows: ConfirmAction keeps its dialog open when onConfirm
+   * rejects, which would strand the user on a failure they have already been
+   * told about.
+   */
+  const handleCancelOrder = async (orderId: string) => {
+    setCancelling(true);
+    try {
+      const result = await cancelOrder(orderId);
+      notify.success(`Order #${orderId} is ${result.status}`);
+      await handleViewOrder(orderId);
+      refresh();
+    } catch (err) {
+      const appErr = toAppError(err, "Cancel failed — please try again");
+      // A closed cancellation window is an expected outcome, not a failure:
+      // warning tone, per the status-colour policy in AGENTS.md.
+      if (
+        appErr.code === "ORDER_NOT_CANCELLABLE" ||
+        appErr.code === "SHIPMENT_ALREADY_DISPATCHED"
+      ) {
+        notify.warning(appErr.message);
+        // The gate refused, so our view of the order is stale — re-read it.
+        await handleViewOrder(orderId);
+        refresh();
+      } else {
+        notify.error(appErr.message);
+      }
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -213,7 +261,11 @@ export default function OrdersPage() {
               {orderDetailsLoading && <LoadingState message="Loading order details..." />}
 
               {!orderDetailsLoading && selectedOrderData && (
-                <OrderDetailsPanel details={selectedOrderData} />
+                <OrderDetailsPanel
+                  details={selectedOrderData}
+                  onCancel={handleCancelOrder}
+                  cancelling={cancelling}
+                />
               )}
             </CardContent>
           </Card>
@@ -229,8 +281,21 @@ export default function OrdersPage() {
   );
 }
 
-function OrderDetailsPanel({ details }: { details: OrderDetails }) {
-  const { order, shipment, payment } = details;
+/** `order_placed` / `SHIPMENT_FETCH_FAILED` → readable prose. */
+function humanize(token: string): string {
+  return token.replace(/_/g, " ").toLowerCase();
+}
+
+function OrderDetailsPanel({
+  details,
+  onCancel,
+  cancelling,
+}: {
+  details: OrderDetails;
+  onCancel: (orderId: string) => void | Promise<void>;
+  cancelling: boolean;
+}) {
+  const { order, shipment, payment, processing, degraded } = details;
 
   return (
     <div className="space-y-3 text-sm">
@@ -240,7 +305,50 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
         <span className="text-xs text-muted-foreground">
           {new Date(order.created_at).toLocaleString()}
         </span>
+        {canCancelOrder(order, shipment) && (
+          <ConfirmAction
+            trigger={
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="ms-auto"
+                disabled={cancelling}
+              >
+                {cancelling ? "Cancelling…" : "Cancel order"}
+              </Button>
+            }
+            title={`Cancel order #${order.id}?`}
+            description="Cancellation is processed asynchronously and cannot be undone once it completes."
+            confirmLabel="Cancel order"
+            // Not the default "Cancel": next to a "Cancel order" button, two
+            // buttons reading "Cancel" would be ambiguous about which one
+            // abandons the dialog and which one cancels the order.
+            cancelLabel="Keep order"
+            destructive
+            onConfirm={() => onCancel(order.id)}
+          />
+        )}
       </div>
+
+      {/* Where the order sits in the fulfilment saga — absent on older orders. */}
+      {processing && (
+        <p className="text-xs text-muted-foreground">
+          Processing: {humanize(processing.stage)}
+          {processing.last_error_code && ` (${humanize(processing.last_error_code)})`}
+        </p>
+      )}
+
+      {/* Enrichment the aggregate could not read — distinct from absent data. */}
+      {degraded && degraded.length > 0 && (
+        <p className="flex flex-wrap gap-1">
+          {degraded.map((token) => (
+            <Badge key={token} variant="outline" className="text-warning">
+              ⚠ {humanize(token)} unavailable
+            </Badge>
+          ))}
+        </p>
+      )}
 
       {order.items && order.items.length > 0 && (
         <section className="overflow-x-auto">
@@ -323,7 +431,7 @@ function OrderDetailsPanel({ details }: { details: OrderDetails }) {
           )}
         </section>
       ) : (
-        order.status === "shipped" && (
+        order.status === "completed" && (
           <p className="text-sm text-muted-foreground">Shipment info not available</p>
         )
       )}
