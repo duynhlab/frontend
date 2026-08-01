@@ -4,7 +4,8 @@ import * as mock from './mock';
 
 /**
  * Order API — Variant A edge paths (all private, JWT required).
- * Edge paths (gateway pass-through): /order/v1/private/orders, /orders/:id, /orders/:id/details
+ * Edge paths (gateway pass-through): /order/v1/private/orders, /orders/:id,
+ * /orders/:id/details, /orders/:id/cancel
  */
 
 /**
@@ -38,9 +39,12 @@ export async function getOrderDetails(id) {
 }
 
 /**
- * POST /order/v1/private/orders
+ * POST /order/v1/private/orders/:id/cancel
+ * Body is empty (reason is fixed server-side). 202 = cancellation accepted,
+ * 200 = idempotent replay (already cancelling/cancelled), 409 = not cancellable.
  */
-export async function createOrder(orderData) {
-    const response = await apiClient.post('/order/v1/private/orders', orderData);
+export async function cancelOrder(id) {
+    if (USE_MOCK) return mock.mockCancelOrder(id);
+    const response = await apiClient.post(`/order/v1/private/orders/${id}/cancel`);
     return response.data;
 }

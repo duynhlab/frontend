@@ -250,6 +250,14 @@ export async function mockGetOrderDetails(id) {
     };
 }
 
+export async function mockCancelOrder(id) {
+    await mockDelay();
+    const order = getMockStore().orders.find((o) => o.id === id);
+    if (!order) throw mockError('Order not found', 404);
+    order.status = 'cancelling';
+    return { order_id: id, status: 'cancelling' };
+}
+
 // ── Reviews ─────────────────────────────────────────────────────────────────
 
 export async function mockGetReviews(productId) {

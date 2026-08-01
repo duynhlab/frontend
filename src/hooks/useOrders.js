@@ -13,7 +13,7 @@ import { getOrders } from '../api/orderApi';
  * @param {boolean} opts.enabled  skip fetching when false (e.g. not authenticated)
  */
 export function useOrders({ page = 1, pageSize = 10, enabled = true } = {}) {
-    const { data, error, isLoading } = useSWR(
+    const { data, error, isLoading, mutate } = useSWR(
         enabled ? ['orders', { page, pageSize }] : null,
         ([, params]) => getOrders({ page: params.page, page_size: params.pageSize }),
         {
@@ -31,5 +31,7 @@ export function useOrders({ page = 1, pageSize = 10, enabled = true } = {}) {
         totalPages: data?.total_pages ?? (total ? Math.ceil(total / pageSize) : 0),
         loading: isLoading,
         error: error?.message || null,
+        // Bound revalidate for callers that change order state (e.g. cancel).
+        refresh: () => mutate(),
     };
 }
