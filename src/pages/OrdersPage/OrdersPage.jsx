@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { getOrderDetails } from '../../api/orderApi';
+import { getOrderDetails, cancelOrder } from '../../api/orderApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
 import { useToast } from '../../hooks/useToast';
@@ -34,11 +34,14 @@ export default function OrdersPage() {
     const PAGE_SIZE = 10;
 
     // Fetch the current page of orders (paginated)
-    const { orders: ordersList, total, totalPages, loading, error } = useOrders({
+    const { orders: ordersList, total, totalPages, loading, error, refresh } = useOrders({
         page,
         pageSize: PAGE_SIZE,
         enabled: isAuthenticated,
     });
+
+    // Cancel-in-flight guard (per selected order)
+    const [cancelling, setCancelling] = useState(false);
 
     const handlePageChange = (newPage) => {
         setSearchParams({ page: String(newPage) });
@@ -66,6 +69,30 @@ export default function OrdersPage() {
         }
     };
 
+    // Cancel the selected order, then re-read details + list so the
+    // cancelling → cancelled progression renders from server truth.
+    const handleCancelOrder = async (orderId) => {
+        setCancelling(true);
+        try {
+            const result = await cancelOrder(orderId);
+            notify('success', `Order #${orderId} is ${result.status}`);
+            await handleViewOrder(orderId);
+            refresh();
+        } catch (err) {
+            const code = err.response?.data?.code;
+            if (code === 'ORDER_NOT_CANCELLABLE' || code === 'SHIPMENT_ALREADY_DISPATCHED') {
+                notify('warning', 'This order can no longer be cancelled');
+            } else {
+                notify('error', 'Cancel failed — please try again');
+            }
+            if (import.meta.env.DEV) {
+                console.error('[API ERROR]', err);
+            }
+        } finally {
+            setCancelling(false);
+        }
+    };
+
     const getStatusColor = (status) => {
         const colors = {
             pending: 'var(--warning)',
@@ -74,6 +101,11 @@ export default function OrdersPage() {
             shipped: 'var(--accent)',
             delivered: 'var(--success)',
             in_transit: 'var(--info)',
+            // order FSM states (RFC-0021 P5)
+            confirmed: 'var(--info)',
+            cancelling: 'var(--warning)',
+            cancelled: 'var(--text-muted)',
+            manual_review: 'var(--error)',
             // payment states (order-details enrichment)
             authorized: 'var(--info)',
             captured: 'var(--success)',
@@ -183,11 +215,15 @@ export default function OrdersPage() {
                         )}
                         
                         {!orderDetailsLoading && selectedOrderData ? (
-                            <OrderDetailsPanel 
-                                order={selectedOrderData.order} 
+                            <OrderDetailsPanel
+                                order={selectedOrderData.order}
                                 shipment={selectedOrderData.shipment}
                                 payment={selectedOrderData.payment}
+                                processing={selectedOrderData.processing}
+                                degraded={selectedOrderData.degraded}
                                 getStatusColor={getStatusColor}
+                                onCancel={handleCancelOrder}
+                                cancelling={cancelling}
                             />
                         ) : !orderDetailsLoading && (
                             <p className="text-muted">Select an order to view details</p>
@@ -202,8 +238,15 @@ export default function OrdersPage() {
     );
 }
 
+// canCancel mirrors the server policy gate (UX-only — the API re-checks):
+// confirmed/completed orders whose shipment has not been dispatched.
+function canCancel(order, shipment) {
+    if (order.status !== 'confirmed' && order.status !== 'completed') return false;
+    return !shipment || shipment.status === 'pending' || shipment.status === 'cancelled';
+}
+
 // Separate component for order details panel - layout consistent with Checkout
-function OrderDetailsPanel({ order, shipment, payment, getStatusColor }) {
+function OrderDetailsPanel({ order, shipment, payment, processing, degraded, getStatusColor, onCancel, cancelling }) {
     if (!order) return null;
 
     return (
@@ -222,7 +265,35 @@ function OrderDetailsPanel({ order, shipment, payment, getStatusColor }) {
                 <div className="text-muted order-details-date">
                     {new Date(order.created_at).toLocaleString()}
                 </div>
+                {canCancel(order, shipment) && (
+                    <button
+                        className="danger"
+                        onClick={() => onCancel(order.id)}
+                        disabled={cancelling}
+                    >
+                        {cancelling ? 'Cancelling…' : 'Cancel Order'}
+                    </button>
+                )}
             </div>
+
+            {/* Processing stage - from the order projection (absent for old orders) */}
+            {processing && (
+                <p className="text-muted order-processing-stage">
+                    Processing: {processing.stage.replace(/_/g, ' ').toLowerCase()}
+                    {processing.last_error_code && ` (${processing.last_error_code.replace(/_/g, ' ').toLowerCase()})`}
+                </p>
+            )}
+
+            {/* Degraded blocks - enrichment fetches that failed (distinct from absent) */}
+            {degraded?.length > 0 && (
+                <p className="order-degraded-note">
+                    {degraded.map(token => (
+                        <span key={token} className="order-degraded-badge">
+                            ⚠ {token} unavailable
+                        </span>
+                    ))}
+                </p>
+            )}
 
             {/* Two-col layout: Order Items (left) + Order Summary (right) - same as Checkout */}
             <div className="order-details-layout">
@@ -306,7 +377,7 @@ function OrderDetailsPanel({ order, shipment, payment, getStatusColor }) {
                     )}
                 </div>
             )}
-            {!shipment && order.status === 'shipped' && (
+            {!shipment && order.status === 'completed' && (
                 <div className="shipment-box">
                     <p className="text-muted">Shipment info not available</p>
                 </div>

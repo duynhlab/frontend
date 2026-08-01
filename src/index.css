@@ -787,6 +787,25 @@ th {
   font-size: 0.8125rem;
 }
 
+.order-processing-stage {
+  font-size: 0.8125rem;
+  margin: 0.25rem 0 0;
+}
+
+.order-degraded-note {
+  margin: 0.25rem 0 0;
+}
+
+.order-degraded-badge {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--warning);
+  border: 1px solid var(--warning);
+}
+
 .order-details-layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
