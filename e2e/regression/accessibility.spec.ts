@@ -4,6 +4,7 @@ import { LoginPage } from "../pages/login.page";
 import { ProductDetailPage } from "../pages/product-detail.page";
 import { CartPage } from "../pages/cart.page";
 import { CheckoutPage } from "../pages/checkout.page";
+import { OrdersPage } from "../pages/orders.page";
 import { toastWithText } from "../utils/toast";
 import type { Page } from "@playwright/test";
 
@@ -83,6 +84,15 @@ test.describe("axe scans (authenticated)", () => {
     // which point the content is near-transparent and axe measures every
     // foreground colour blended against the backdrop — a false contrast
     // failure. Wait for the animation to land on full opacity instead.
+    await expect(page.getByRole("alertdialog")).toHaveCSS("opacity", "1");
+    await expectNoSeriousViolations(page);
+  });
+
+  test("order cancel dialog is accessible while open", async ({ page }) => {
+    const orders = new OrdersPage(page);
+    await orders.goto();
+    await orders.view("ord-1002");
+    await orders.cancelTrigger.click();
     await expect(page.getByRole("alertdialog")).toHaveCSS("opacity", "1");
     await expectNoSeriousViolations(page);
   });

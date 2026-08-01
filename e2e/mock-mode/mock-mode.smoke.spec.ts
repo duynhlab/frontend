@@ -62,6 +62,26 @@ test("demo journey: login → add to cart → checkout with save10 → account p
   // Account surfaces render from the mock store.
   await nav.getByRole("link", { name: "Orders" }).click();
   await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible();
+
+  // Cancel the seeded cancellable order — the one write the orders module
+  // owns, and the only thing that exercises mockCancelOrder offline.
+  await page
+    .getByRole("row")
+    .filter({ hasText: "#ord-1002" })
+    .getByRole("button", { name: "View" })
+    .click();
+  await page
+    .getByRole("button", { name: "Cancel order", exact: true })
+    .and(page.locator('[aria-haspopup="dialog"]'))
+    .click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Cancel order" })
+    .click();
+  await expect(page.getByRole("row").filter({ hasText: "#ord-1002" })).toContainText(
+    /cancelling/i,
+  );
+
   await nav.getByRole("link", { name: /Notifications/ }).click();
   await expect(page.getByRole("heading", { name: "Order placed" })).toBeVisible();
   await nav.getByRole("link", { name: "Profile" }).click();

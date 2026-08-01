@@ -1,10 +1,38 @@
 import type { Review } from "@/api/types/product";
 import type { UpdateProfileRequest } from "@/api/types/user";
 import { apiError, json, type ApiHandler } from "../server";
-import { orderDetailsFor } from "../responses/account.responses";
+import { e2eCanCancel, orderDetailsFor } from "../responses/account.responses";
 import { E2E_USER } from "../responses/auth.responses";
 
 export const orderHandlers: ApiHandler[] = [
+  {
+    // POST /orders/:id/cancel — mirrors the server contract: 200 for an
+    // idempotent replay, 409 when the policy gate refuses, 202 otherwise.
+    // Cancellation settles asynchronously, so the order is parked in
+    // `cancelling` rather than jumping straight to `cancelled`.
+    method: "POST",
+    path: /\/order\/v1\/private\/orders\/[^/]+\/cancel$/,
+    fulfill: ({ route, url, state }) => {
+      const id = url.pathname.split("/").at(-2);
+      const order = state.orders.find((o) => o.id === id);
+      if (!order) return apiError(route, "Order not found", 404);
+
+      if (order.status === "cancelling" || order.status === "cancelled") {
+        return json(route, { order_id: order.id, status: order.status }, 200);
+      }
+      if (!e2eCanCancel(order)) {
+        return apiError(
+          route,
+          "Order can no longer be cancelled",
+          409,
+          "ORDER_NOT_CANCELLABLE",
+        );
+      }
+
+      order.status = "cancelling";
+      return json(route, { order_id: order.id, status: order.status }, 202);
+    },
+  },
   {
     method: "GET",
     path: /\/order\/v1\/private\/orders\/[^/]+\/details$/,

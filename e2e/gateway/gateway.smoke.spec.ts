@@ -217,6 +217,39 @@ test(`checkout funnel (${CHECKOUT_MODE} mode)`, async () => {
     expect(
       observer.count("POST", /\/checkout\/v1\/private\/checkout\/sessions\/[^/]+\/confirm$/),
     ).toBe(1);
+
+    // Cancel the order this run just placed. Two jobs at once: it verifies the
+    // real cancel contract (202/200 and the FSM moving to cancelling), and it
+    // is the cleanup that makes submit mode rerunnable. Only reachable here —
+    // cancelling an arbitrary pre-existing order would mutate someone's data.
+    await page.goto("/orders");
+    await expect(page.getByRole("heading", { name: "My Orders" })).toBeVisible();
+    const newest = page.getByRole("row").nth(1);
+    await newest.getByRole("button", { name: "View" }).click();
+    const cancelTrigger = page
+      .getByRole("button", { name: "Cancel order", exact: true })
+      .and(page.locator('[aria-haspopup="dialog"]'));
+
+    if (await cancelTrigger.isVisible()) {
+      await cancelTrigger.click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Cancel order" })
+        .click();
+      await expect(page.getByRole("row").nth(1)).toContainText(/cancelling|cancelled/i);
+      expect(
+        observer.count("POST", /\/order\/v1\/private\/orders\/[^/]+\/cancel$/),
+      ).toBe(1);
+    } else {
+      // The order went straight past the cancellable window (fulfilment is
+      // async and may already have dispatched). Real, not a test failure —
+      // record it rather than pretending the path was covered.
+      test.info().annotations.push({
+        type: "gap",
+        description:
+          "order cancel skipped: the placed order was no longer cancellable by the time /orders rendered",
+      });
+    }
   } else {
     // HONEST GAP (plan §13.7.1): without confirmed idempotency/cleanup we
     // stop before submit and cancel the session instead.
