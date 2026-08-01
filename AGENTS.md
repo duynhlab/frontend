@@ -354,6 +354,28 @@ Auth:
 - Demo login (seeded `auth-db`): username `alice`, password `password123` — log in by
   **username**, not email.
 
+Orders (RFC-0021):
+
+- Orders are **created by the checkout funnel**, never by `orderApi`. The one
+  write that module owns is `POST /order/v1/private/orders/:id/cancel`.
+- Cancel takes an **empty body** (the reason is fixed server-side) and returns
+  `{ order_id, status }`. **202** = accepted, settled asynchronously; **200** =
+  idempotent replay of an order already cancelling or cancelled — both are
+  successes. **409** carries `ORDER_NOT_CANCELLABLE` or
+  `SHIPMENT_ALREADY_DISPATCHED`.
+- Order FSM: `pending → processing → confirmed → completed`, with
+  `cancelling → cancelled` and `manual_review` as off-ramps. `cancelling` is
+  distinct from `cancelled` on purpose — the saga has not settled yet, and the
+  UI must be able to say so rather than claiming the order is gone.
+- `canCancelOrder` (`src/lib/orderPolicy.ts`) mirrors the server gate and is
+  shared by the UI and the app mock so the two cannot drift. It is **not
+  authoritative**: the API re-checks, and the shipment can dispatch between
+  reading the details and sending the cancel.
+- A refused cancellation is a **warning**, not an error — the window closing is
+  an expected outcome. Both 409 codes are mapped in `CODE_MAP`; a coded error
+  missing from that map surfaces as the bare generic message, because
+  `toAppError` gives a present `code` precedence over the status fallback.
+
 Diagrams:
 
 - **Mermaid only.** Never ASCII-art diagrams.
