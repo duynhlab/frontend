@@ -11,6 +11,7 @@ import type {
   NotificationCount,
 } from "@/api/types/notification";
 import type {
+  CancelOrderResponse,
   Order,
   OrderDetails,
   OrderListResponse,
@@ -23,6 +24,7 @@ import type {
   Review,
 } from "@/api/types/product";
 import type { PublicUser, UpdateProfileRequest, UserProfile } from "@/api/types/user";
+import { canCancelOrder } from "@/lib/orderPolicy";
 import { mockDelay } from "./delay";
 import { mockError } from "./errors";
 import { DEMO_USER, MOCK_TOKENS, TOTAL_MOCK_PRODUCTS } from "./seed";
@@ -286,6 +288,19 @@ export async function mockGetOrder(id: string): Promise<Order> {
   return { ...order };
 }
 
+/**
+ * Shipment status implied by the order status. `confirmed` orders have not
+ * been handed to the carrier yet, which is what makes them cancellable — if
+ * this returned `in_transit` for them the Cancel action would be unreachable
+ * in mock mode.
+ */
+function mockShipmentStatus(order: Order): string {
+  if (order.status === "delivered") return "delivered";
+  if (order.status === "confirmed") return "pending";
+  if (order.status === "cancelled") return "cancelled";
+  return "in_transit";
+}
+
 export async function mockGetOrderDetails(id: string): Promise<OrderDetails> {
   await mockDelay();
   const order = getMockStore().orders.find((o) => o.id === id);
@@ -293,11 +308,36 @@ export async function mockGetOrderDetails(id: string): Promise<OrderDetails> {
   return {
     order: { ...order },
     shipment: {
-      status: order.status === "delivered" ? "delivered" : "in_transit",
+      status: mockShipmentStatus(order),
       carrier: "Mock Express",
       tracking_number: `MOCK-${id}`,
     },
   };
+}
+
+/**
+ * POST /orders/:id/cancel — mirrors the server contract: 200 for an
+ * idempotent replay, 409 when the policy gate refuses, otherwise accept the
+ * cancellation (202) and leave the order in `cancelling` for the saga.
+ */
+export async function mockCancelOrder(id: string): Promise<CancelOrderResponse> {
+  await mockDelay();
+  const order = getMockStore().orders.find((o) => o.id === id);
+  if (!order) throw mockError("Order not found", 404);
+
+  if (order.status === "cancelling" || order.status === "cancelled") {
+    return { order_id: id, status: order.status };
+  }
+  if (!canCancelOrder(order, { status: mockShipmentStatus(order) })) {
+    throw mockError(
+      "Order can no longer be cancelled",
+      409,
+      "ORDER_NOT_CANCELLABLE",
+    );
+  }
+
+  order.status = "cancelling";
+  return { order_id: id, status: order.status };
 }
 
 // ── Reviews ─────────────────────────────────────────────────────────────────

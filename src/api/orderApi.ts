@@ -1,13 +1,19 @@
 import apiClient from "./client";
 import * as mock from "./mock";
-import type { Order, OrderDetails, OrderListResponse } from "./types/order";
+import type {
+  CancelOrderResponse,
+  Order,
+  OrderDetails,
+  OrderListResponse,
+} from "./types/order";
 
 /**
  * Order API — Variant A edge paths (all private, JWT required).
- * Edge paths (gateway pass-through): /order/v1/private/orders, /orders/:id, /orders/:id/details
+ * Edge paths (gateway pass-through): /order/v1/private/orders, /orders/:id,
+ * /orders/:id/details, /orders/:id/cancel
  *
- * Orders are CREATED by the checkout funnel (see checkoutApi.ts) — this
- * module is read-only.
+ * Orders are CREATED by the checkout funnel (see checkoutApi.ts). Cancellation
+ * is the only write this module owns.
  */
 
 /**
@@ -43,6 +49,23 @@ export async function getOrderDetails(id: string): Promise<OrderDetails> {
   if (import.meta.env.VITE_USE_MOCK === "true") return mock.mockGetOrderDetails(id);
   const response = await apiClient.get<OrderDetails>(
     `/order/v1/private/orders/${id}/details`,
+  );
+  return response.data;
+}
+
+/**
+ * POST /order/v1/private/orders/:id/cancel
+ *
+ * Body is empty — the cancellation reason is fixed server-side. 202 means the
+ * cancellation was accepted and the saga will settle it asynchronously; 200 is
+ * an idempotent replay for an order already cancelling or cancelled, so both
+ * are successes. A 409 carries ORDER_NOT_CANCELLABLE or
+ * SHIPMENT_ALREADY_DISPATCHED.
+ */
+export async function cancelOrder(id: string): Promise<CancelOrderResponse> {
+  if (import.meta.env.VITE_USE_MOCK === "true") return mock.mockCancelOrder(id);
+  const response = await apiClient.post<CancelOrderResponse>(
+    `/order/v1/private/orders/${id}/cancel`,
   );
   return response.data;
 }

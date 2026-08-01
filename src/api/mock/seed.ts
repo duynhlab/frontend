@@ -67,6 +67,15 @@ export const SEED_NOTIFICATIONS = [
 ] satisfies AppNotification[];
 
 export const SEED_ORDERS = [
+  // Cancellable: `confirmed` with no dispatched shipment. Without one of
+  // these the Cancel action is unreachable in mock mode and dogfood.
+  {
+    id: "ord-1002",
+    status: "confirmed",
+    total: 42.5,
+    created_at: "2026-07-28T08:05:00Z",
+    item_count: 1,
+  },
   {
     id: "ord-1001",
     status: "shipped",
