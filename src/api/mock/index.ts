@@ -28,6 +28,7 @@ import { canCancelOrder } from "@/lib/orderPolicy";
 import { mockDelay } from "./delay";
 import { mockError } from "./errors";
 import { DEMO_USER, MOCK_TOKENS, TOTAL_MOCK_PRODUCTS } from "./seed";
+import { availabilityFor, productIndexOf } from "./seed-constants";
 import { getMockStore, nextId, resetMockStore } from "./store";
 
 export { resetMockStore };
@@ -105,6 +106,7 @@ export async function mockGetProductDetails(
   const reviews = getMockStore().reviews.filter((r) => r.product_id === id);
   return {
     product,
+    availability: availabilityFor(productIndexOf(id)),
     stock: { available: product.stock > 0, quantity: product.stock },
     reviews,
   };

@@ -1,5 +1,9 @@
 import type { ProductDetails } from "@/api/types/product";
-import { DEFAULT_PAGE_SIZE } from "@/api/mock/seed-constants";
+import {
+  availabilityFor,
+  DEFAULT_PAGE_SIZE,
+  productIndexOf,
+} from "@/api/mock/seed-constants";
 import { apiError, json, type ApiHandler } from "../server";
 import { buildProductsPage } from "../responses/products.responses";
 
@@ -13,6 +17,7 @@ export const productHandlers: ApiHandler[] = [
       if (!product) return apiError(route, "Resource not found", 404);
       const details: ProductDetails = {
         product,
+        availability: availabilityFor(productIndexOf(id ?? "")),
         stock: { available: product.stock > 0, quantity: product.stock },
         reviews: state.reviews.filter((r) => r.product_id === id),
       };
