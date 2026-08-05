@@ -32,15 +32,25 @@ const STATUS = {
  *   which happens against a product build older than the enrichment — it keeps the
  *   page working regardless of the order the two services deploy in. It goes away
  *   with the `stock` block itself.
- * @returns {{className: string, text: string}|null} null when neither source
- *   answered, so the caller renders nothing rather than an empty line.
+ * @returns {{className: string, text: string, purchasable: boolean}|null} null when
+ *   neither source answered, so the caller renders nothing rather than an empty line.
+ *
+ *   `purchasable` is false ONLY when we positively know the item is out of stock.
+ *   An `unknown` answer leaves it TRUE on purpose: adding to a cart is not a
+ *   reservation, and refusing the action because a read degraded turns a lost read
+ *   into a lost sale. Checkout is where availability is enforced, and it fails
+ *   closed there — a 503 the shopper can retry, not a silently dead button.
  */
 export function describeAvailability(availability, legacyStock) {
     if (availability?.status) {
         const shape = STATUS[availability.status] ?? STATUS.unknown;
         const qty = availability.available_to_promise;
         const showQty = shape !== STATUS.unknown && typeof qty === 'number' && qty > 0;
-        return { className: shape.className, text: showQty ? `${shape.label} (${qty})` : shape.label };
+        return {
+            className: shape.className,
+            text: showQty ? `${shape.label} (${qty})` : shape.label,
+            purchasable: availability.status !== 'out_of_stock',
+        };
     }
 
     if (legacyStock) {
@@ -50,8 +60,9 @@ export function describeAvailability(availability, legacyStock) {
                 text: typeof legacyStock.quantity === 'number'
                     ? `In Stock (${legacyStock.quantity})`
                     : STATUS.in_stock.label,
+                purchasable: true,
             }
-            : { className: STATUS.out_of_stock.className, text: STATUS.out_of_stock.label };
+            : { className: STATUS.out_of_stock.className, text: STATUS.out_of_stock.label, purchasable: false };
     }
 
     return null;

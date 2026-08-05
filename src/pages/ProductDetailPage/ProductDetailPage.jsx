@@ -224,7 +224,11 @@ export default function ProductDetailPage() {
                             <button
                                 className="btn-primary add-to-cart-btn"
                                 onClick={handleAddToCart}
-                                disabled={adding || !data.stock?.available}
+                                // NOT data.stock: product stopped sending that block in
+                                // 1.8.0, so `!data.stock?.available` was always true and
+                                // the button sat permanently disabled — no console error,
+                                // no failed request, just nobody able to buy anything.
+                                disabled={adding || availability?.purchasable === false}
                             >
                                 {adding ? 'Adding...' : 'Add to Cart'}
                             </button>
