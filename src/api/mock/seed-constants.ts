@@ -86,7 +86,7 @@ export function availabilityFor(index: number): {
   if (index === UNKNOWN_AVAILABILITY_INDEX) return { status: "unknown" };
 
   const quantity = productStockFor(index);
-  if (quantity === 0) return { status: "out_of_stock", available_to_promise: 0 };
+  if (quantity === 0) return { status: "out_of_stock" };
   if (quantity <= LOW_STOCK_THRESHOLD) {
     return { status: "low_stock", available_to_promise: quantity };
   }

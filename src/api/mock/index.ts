@@ -104,10 +104,14 @@ export async function mockGetProductDetails(
   const product = getMockStore().products.find((p) => p.id === id);
   if (!product) throw mockError("Resource not found", 404);
   const reviews = getMockStore().reviews.filter((r) => r.product_id === id);
+  // No `stock` block: product-service stopped sending it in 1.8.0. A mock that
+  // keeps serving a shape the API has dropped hides exactly the class of bug
+  // that shape caused — a control wired to `data.stock` that silently never
+  // enables. The legacy fallback in `describeAvailability` is still exercised,
+  // but only where it is real: by an explicit override in the availability spec.
   return {
     product,
     availability: availabilityFor(productIndexOf(id)),
-    stock: { available: product.stock > 0, quantity: product.stock },
     reviews,
   };
 }

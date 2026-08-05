@@ -15,10 +15,11 @@ export const productHandlers: ApiHandler[] = [
       const id = url.pathname.split("/").at(-2);
       const product = state.products.find((p) => p.id === id);
       if (!product) return apiError(route, "Resource not found", 404);
+      // No `stock` block — product 1.8.0 stopped sending it. See the note in
+      // src/api/mock/index.ts.
       const details: ProductDetails = {
         product,
         availability: availabilityFor(productIndexOf(id ?? "")),
-        stock: { available: product.stock > 0, quantity: product.stock },
         reviews: state.reviews.filter((r) => r.product_id === id),
       };
       return json(route, details);
