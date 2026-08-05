@@ -37,6 +37,20 @@ test.describe("axe scans (guest)", () => {
     });
   }
 
+  // The out-of-stock and unknown products are the only way to render the
+  // destructive and muted availability tones, and `color-contrast` is a serious
+  // rule — muted grey on the page background is the one at risk.
+  for (const [route, label] of [
+    ["/products/prod-00046", "out of stock"],
+    ["/products/prod-00048", "unknown availability"],
+  ]) {
+    test(`no critical/serious violations for ${label}`, async ({ page }) => {
+      await page.goto(route!);
+      await expect(page.getByRole("heading").first()).toBeVisible();
+      await expectNoSeriousViolations(page);
+    });
+  }
+
   test("login validation errors stay accessible", async ({ page }) => {
     const login = new LoginPage(page);
     await login.goto();
