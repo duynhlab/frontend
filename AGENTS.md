@@ -305,6 +305,14 @@ npm run test:agent:cutover  # agent-browser dogfood: smoke + a11y + visual
   `opacity: 1` rather than mere visibility: `toBeVisible()` resolves mid
   entrance-animation, where axe measures every colour blended against the
   backdrop and reports false contrast failures.
+- **A state no fixture can produce is untested, not covered.** `productStockFor`
+  returned `1..200` and never 0, so `available` was always true and the
+  out-of-stock UI was dead code for the life of the project. When adding a state
+  machine, reserve fixture slots for every branch — `OUT_OF_STOCK_INDEX` /
+  `LOW_STOCK_INDEX` / `UNKNOWN_AVAILABILITY_INDEX` in
+  `src/api/mock/seed-constants.ts` are the pattern. Reserve from the END of the
+  catalogue: `prod-00001` is the add-to-cart product in a dozen specs and must
+  stay purchasable.
 - Never bundle a data page-size change (`PRODUCTS_PER_PAGE`) with a layout
   change — three specs assert `toHaveCount(24)` and the failure would read as a
   layout regression.
@@ -353,6 +361,32 @@ Auth:
   server-side, then local state is cleared regardless of the result.
 - Demo login (seeded `auth-db`): username `alice`, password `password123` — log in by
   **username**, not email.
+
+Product availability (RFC-0021):
+
+- Availability comes from **inventory-service**, via the `availability` block on
+  `GET /product/v1/public/products/:id/details`:
+  `{ status: in_stock | low_stock | out_of_stock | unknown, available_to_promise? }`.
+- `ProductDetails.stock` is product-service's **own frozen column**, fixed at the
+  phase-3 write cutover — a count that can never change. Read it only as a
+  fallback when `availability` is absent, which happens against a product build
+  older than the enrichment. It is being removed.
+- **`unknown` must never render as in-stock or out-of-stock.** Inventory
+  soft-fails to `unknown` when it cannot be reached, and a page that guesses
+  either way turns a degraded read into a claim about the customer's order.
+- **`available_to_promise` is omitted, not zeroed, on `unknown`** — precisely so a
+  missing figure cannot be confused with a real zero. Show a quantity only when
+  the authority sent one, and never let a fixture zero it.
+- **The purchase gate reads the same source as the label.** Gating on the frozen
+  column while labelling from inventory lets the button contradict the text, and
+  makes Add to Cart die outright once the `stock` block is removed. `unknown`
+  stays purchasable: the server re-checks at add-to-cart and at checkout confirm,
+  so refusing here would be the same guess the label refuses to make.
+- `src/lib/availability.ts` owns all three derivations (label+tone, purchasable,
+  max quantity). It returns a semantic **tone**, not a Tailwind class — nothing in
+  `src/lib/` knows about Tailwind, and tone→class mapping belongs at the call site.
+- State is carried in the **text**, with colour as decoration only. axe has no
+  rule for colour-as-sole-indicator, so nothing would catch a regression there.
 
 Orders (RFC-0021):
 
