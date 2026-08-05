@@ -360,6 +360,20 @@ textarea:focus {
   font-size: 0.8125rem;
 }
 
+/* Inventory could not answer. Muted on purpose: the page must not imply a
+   definite in-stock or out-of-stock when it does not know one. */
+.stock-unknown {
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.stock-low {
+  color: var(--warning);
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+}
+
 /* Quantity Selector */
 .quantity-selector {
   display: flex;
