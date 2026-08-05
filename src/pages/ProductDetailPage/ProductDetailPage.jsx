@@ -14,6 +14,7 @@ import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
 import { createReview } from '../../api/reviewApi';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { describeAvailability } from '../../utils/availability';
 
 // Helper functions moved outside component to avoid recreation on every render
 function formatReviewDate(review) {
@@ -54,6 +55,14 @@ export default function ProductDetailPage() {
     // Reviews come from the aggregation payload (3-layer compliance)
     const reviews = useMemo(
         () => (Array.isArray(data?.reviews) ? data.reviews : []),
+        [data]
+    );
+
+    // Availability comes from inventory-service via the details aggregation
+    // (RFC-0021). data.stock is product's own frozen column and is read only as a
+    // fallback for a product build that predates the enrichment.
+    const availability = useMemo(
+        () => describeAvailability(data?.availability, data?.stock),
         [data]
     );
 
@@ -202,12 +211,8 @@ export default function ProductDetailPage() {
                             <p className="detail-description">{data.product.description}</p>
                             <p className="detail-price">{formatCurrency(data.product.price)}</p>
 
-                            {data.stock && (
-                                <p className={data.stock.available ? 'stock-available' : 'stock-out'}>
-                                    {data.stock.available
-                                        ? `In Stock (${data.stock.quantity})`
-                                        : 'Out of Stock'}
-                                </p>
+                            {availability && (
+                                <p className={availability.className}>{availability.text}</p>
                             )}
 
                             <QuantitySelector
