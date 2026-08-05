@@ -26,8 +26,9 @@ import PageShell from "@/components/layout/PageShell";
  * that arrive as plain strings.
  *
  * The `default` arm means the compiler will NOT flag a newly added OrderStatus
- * here — an unhandled state silently renders muted. Keep this in step with the
- * union by hand; `orders-cancel.spec.ts` asserts the cancel-flow tones.
+ * here — an unhandled state silently renders muted, so keep this in step with
+ * the union by hand. Note that nothing pins the tone mapping either: the specs
+ * assert badge *text*, and no test in the repo asserts a colour.
  */
 function statusToneClass(status: OrderStatus | string): string {
   switch (status as OrderStatus) {

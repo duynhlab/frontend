@@ -19,6 +19,13 @@ import { addToCart } from "@/api/cartApi";
 import type { CartCount } from "@/api/types/cart";
 import type { Review } from "@/api/types/product";
 import { formatCurrency } from "@/lib/format";
+import {
+  describeAvailability,
+  isPurchasable,
+  purchasableQuantity,
+  type AvailabilityTone,
+} from "@/lib/availability";
+import { cn } from "@/lib/utils";
 import { getStoredUser, isAuthenticated as hasStoredToken } from "@/auth/tokens";
 import type { StoredUser } from "@/api/types/auth";
 import PageShell from "@/components/layout/PageShell";
@@ -38,10 +45,17 @@ function getInitial(name: string): string {
   return (name || "G").trim().charAt(0).toUpperCase() || "G";
 }
 
+const AVAILABILITY_TONE: Record<AvailabilityTone, string> = {
+  success: "text-success",
+  warning: "text-warning",
+  destructive: "text-destructive",
+  muted: "text-muted-foreground",
+};
+
 /**
  * ProductDetailPage — uses the aggregation endpoint
- * GET /product/v1/public/products/:id/details (product + stock + reviews in
- * one call; no client-side orchestration).
+ * GET /product/v1/public/products/:id/details (product + availability + reviews
+ * in one call; no client-side orchestration).
  */
 export default function ProductDetailPage() {
   const { id = "" } = useParams();
@@ -56,6 +70,30 @@ export default function ProductDetailPage() {
 
   const reviews = useMemo(
     () => (Array.isArray(data?.reviews) ? data.reviews : []),
+    [data],
+  );
+
+  /**
+   * Availability comes from inventory-service via the details aggregation
+   * (RFC-0021). `data.stock` is product-service's own frozen column and is read
+   * only as a fallback for a product build that predates the enrichment, so the
+   * page works regardless of the order the two services deploy in.
+   *
+   * The purchase gate reads the same source as the label, deliberately: gating
+   * on the frozen column while labelling from inventory lets the button
+   * contradict the text, and makes Add to Cart die outright the day the `stock`
+   * block is removed.
+   */
+  const availability = useMemo(
+    () => describeAvailability(data?.availability, data?.stock),
+    [data],
+  );
+  const purchasable = useMemo(
+    () => isPurchasable(data?.availability, data?.stock),
+    [data],
+  );
+  const maxQuantity = useMemo(
+    () => purchasableQuantity(data?.availability, data?.stock),
     [data],
   );
 
@@ -164,17 +202,9 @@ export default function ProductDetailPage() {
                 {formatCurrency(data.product.price)}
               </p>
 
-              {data.stock && (
-                <p
-                  className={
-                    data.stock.available
-                      ? "text-sm text-success"
-                      : "text-sm text-destructive"
-                  }
-                >
-                  {data.stock.available
-                    ? `In Stock (${data.stock.quantity})`
-                    : "Out of Stock"}
+              {availability && (
+                <p className={cn("text-sm", AVAILABILITY_TONE[availability.tone])}>
+                  {availability.label}
                 </p>
               )}
 
@@ -182,13 +212,13 @@ export default function ProductDetailPage() {
                 quantity={quantity}
                 onChange={setQuantity}
                 min={1}
-                {...(data.stock?.available && { max: data.stock.quantity })}
+                {...(maxQuantity !== undefined && { max: maxQuantity })}
               />
 
               <Button
                 size="lg"
                 onClick={() => void handleAddToCart()}
-                disabled={adding || !data.stock?.available}
+                disabled={adding || !purchasable}
                 aria-busy={adding}
               >
                 {adding ? "Adding..." : "Add to Cart"}
