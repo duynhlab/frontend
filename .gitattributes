@@ -1,0 +1,26 @@
+# Line endings.
+#
+# Source is normalised to LF on commit. Without this, a commit made on Windows
+# rewrites a whole file's line endings and the real change disappears into a
+# thousand-line diff — main's #81 showed 2,396 changed lines for what was
+# actually 83 insertions, because it also flipped index.css and
+# ProductDetailPage.jsx from CRLF to LF.
+#
+# Scoped to the types the app owns rather than a blanket `* text=auto`:
+# .dockerignore, .env.example, package.json and package-lock.json are CRLF in
+# the index today, and a blanket rule would renormalise them — a 20k-line
+# package-lock diff — the next time anyone touched them. Add them here only
+# alongside a deliberate renormalisation commit.
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.mjs   text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.md    text eol=lf
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Playwright baselines are byte-compared; never let git touch them.
+*.png   binary
+*.woff2 binary
