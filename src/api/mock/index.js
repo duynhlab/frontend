@@ -71,7 +71,13 @@ export async function mockGetProductDetails(id) {
     const reviews = getMockStore().reviews.filter((r) => r.product_id === id);
     return {
         product,
-        stock: { available: product.stock > 0, quantity: product.stock },
+        // Mirrors the real /details since product 1.8.0: no `stock` block, an
+        // `availability` block from inventory-service. A mock that keeps serving a
+        // shape the API stopped sending hides exactly the bug this replaced — a
+        // button wired to `data.stock` that silently never enables.
+        availability: product.stock > 0
+            ? { status: product.stock <= 5 ? 'low_stock' : 'in_stock', available_to_promise: product.stock }
+            : { status: 'out_of_stock' },
         reviews,
     };
 }
