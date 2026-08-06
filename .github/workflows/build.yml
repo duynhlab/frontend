@@ -34,14 +34,14 @@ jobs:
         run: npm run build
 
   gitleaks:
-    uses: duynhlab/gha-workflows/.github/workflows/gitleaks.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/gitleaks.yml@b271f01094ee7f16271b14575539e62907a50724 # v1.0.0
     permissions:
       contents: read
       security-events: write
 
   docker-build:
     needs: [lint, gitleaks]
-    uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@b271f01094ee7f16271b14575539e62907a50724 # v1.0.0
     with:
       image-name: '${{ github.event.repository.name }}'
       push: true
@@ -52,7 +52,6 @@ jobs:
       # v stripped) — same behavior as the Go services.
       tags: |
         type=raw,value=main-${{ github.run_number }}-${{ github.sha }},enable=${{ github.ref == 'refs/heads/main' }}
-    secrets: inherit
     permissions:
       contents: read
       packages: write
@@ -61,13 +60,16 @@ jobs:
   trivy-scan:
     needs: [docker-build]
     if: needs.docker-build.outputs.scan-status == 'pass'
-    uses: duynhlab/gha-workflows/.github/workflows/trivy-scan.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/trivy-scan.yml@b271f01094ee7f16271b14575539e62907a50724 # v1.0.0
     with:
       image-ref: ghcr.io/${{ github.repository }}/${{ github.event.repository.name }}@${{ needs.docker-build.outputs.digest }}
       severity: 'CRITICAL,HIGH'
       exit-code: '1'
       ignore-unfixed: true
-    secrets: inherit
+    # Named, not inherited: the only secrets this workflow declares.
+    secrets:
+      GSHEET_CLIENT_EMAIL: ${{ secrets.GSHEET_CLIENT_EMAIL }}
+      GSHEET_PRIVATE_KEY: ${{ secrets.GSHEET_PRIVATE_KEY }}
     permissions:
       contents: read
       packages: read
@@ -75,11 +77,10 @@ jobs:
 
   docker-sign:
     needs: [docker-build, trivy-scan]
-    uses: duynhlab/gha-workflows/.github/workflows/docker-sign.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/docker-sign.yml@b271f01094ee7f16271b14575539e62907a50724 # v1.0.0
     with:
       tags: ${{ needs.docker-build.outputs.tags }}
       digest: ${{ needs.docker-build.outputs.digest }}
-    secrets: inherit
     permissions:
       contents: read
       packages: write
@@ -88,7 +89,7 @@ jobs:
   notify:
     if: always()
     needs: [lint, gitleaks, docker-build, trivy-scan, docker-sign]
-    uses: duynhlab/gha-workflows/.github/workflows/status.yml@main
+    uses: duynhlab/gha-workflows/.github/workflows/status.yml@b271f01094ee7f16271b14575539e62907a50724 # v1.0.0
     with:
       slack_channel_id: "C0AD82A9A74"
       gsheet_spreadsheet_id: "1F2VUrAOyMGnETApp5yA-ldCW81ConiQXnWYZVxKas_0"
