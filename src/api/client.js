@@ -154,6 +154,17 @@ apiClient.interceptors.response.use(
                 return Promise.reject(error);
             }
 
+            // Temporarily unavailable (backend fail-closed: a dependency or its
+            // own datastore is failing over — checkout 0.5.1/0.6.x semantics).
+            // Flag it and carry Retry-After so callers can pace ONE retry with
+            // jitter; no auto-retry here, mirroring the 429 rule — blind
+            // interceptor retries would synchronize the whole tab herd.
+            if (response.status === 503) {
+                error.isUnavailable = true;
+                const retryAfter = Number(response.headers?.['retry-after']);
+                error.retryAfterMs = retryAfter > 0 ? retryAfter * 1000 : 2000;
+            }
+
             // Extract error message from response. Two envelopes exist:
             // RespondError ({error: "<string>", code}) and the checkout
             // requote 409 ({error: {code, message}, session}) — never assign

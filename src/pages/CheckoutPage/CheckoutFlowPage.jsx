@@ -89,9 +89,17 @@ export default function CheckoutFlowPage() {
     // recreated; a requote (409 with a `session` body) re-renders the fresh
     // quote — the Idempotency-Key is NOT consumed and stays reusable.
     const handleFunnelError = (err) => {
-        const { code, message, session: requoted, status, isRateLimit } = parseApiError(err);
+        const { code, message, session: requoted, status, isRateLimit, isUnavailable } = parseApiError(err);
         if (isRateLimit) {
             notify('info', err.message);
+            return;
+        }
+        if (isUnavailable) {
+            // The one paced retry already ran inside run(); reaching here means
+            // it also failed. Warning, not red: the backend said "not now",
+            // and the funnel state (and confirm's Idempotency-Key) survive.
+            notify('warning', 'The service is busy right now — please try again in a moment.');
+            if (requoted) setSession(requoted);
             return;
         }
         if (status === 410) {
@@ -107,12 +115,26 @@ export default function CheckoutFlowPage() {
         notify('error', toUserFriendlyError(message, code));
     };
 
+    // One paced retry on 503: the backend advertises Retry-After when it is
+    // failing over (checkout 0.6.x), and every funnel write is safe to replay
+    // — confirm's Idempotency-Key is persisted until success, the PUTs are
+    // conditional. Jitter desynchronizes the tab herd (the review note on the
+    // constant 2s: compliant clients re-arriving in phase-locked waves).
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const run = (fn) => async (...args) => {
         setBusy(true);
         try {
-            const s = await fn(...args);
-            setSession(s);
-            return s;
+            try {
+                const s = await fn(...args);
+                setSession(s);
+                return s;
+            } catch (err) {
+                if (!err?.isUnavailable) throw err;
+                await wait((err.retryAfterMs || 2000) + Math.random() * 500);
+                const s = await fn(...args);
+                setSession(s);
+                return s;
+            }
         } catch (err) {
             handleFunnelError(err);
             return null;
