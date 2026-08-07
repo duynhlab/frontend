@@ -7,7 +7,8 @@
  *   2. Checkout confirm-requote 409s (price/stock/promo):
  *        { "error": { "code": "<CODE>", "message": "<string>" }, "session": {…} }
  *
- * Callers get a stable { code, message, session, isRateLimit, status } and
+ * Callers get a stable { code, message, session, isRateLimit, isUnavailable,
+ * retryAfterMs, status } and
  * never have to know which envelope the server used.
  * TODO: adopt across the other pages (they still read err.response.data ad hoc).
  */
@@ -22,6 +23,8 @@ export function parseApiError(err) {
             message: raw.message ?? null,
             session: data.session ?? null,
             isRateLimit: !!err?.isRateLimit,
+            isUnavailable: !!err?.isUnavailable,
+            retryAfterMs: err?.retryAfterMs ?? 0,
             status,
         };
     }
@@ -30,6 +33,8 @@ export function parseApiError(err) {
         message: typeof raw === 'string' ? raw : (data?.message ?? err?.message ?? null),
         session: data?.session ?? null,
         isRateLimit: !!err?.isRateLimit,
+        isUnavailable: !!err?.isUnavailable,
+        retryAfterMs: err?.retryAfterMs ?? 0,
         status,
     };
 }
