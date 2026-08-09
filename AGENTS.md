@@ -149,5 +149,4 @@ Diagrams:
 
 ## Source of truth
 
-- API naming: [`homelab/docs/api/api-naming-convention.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md)
-- Endpoint shapes: [`homelab/docs/api/api.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api.md)
+- API naming and endpoint shapes: [`homelab/docs/api/api.md`](https://github.com/duynhlab/homelab/blob/main/docs/api/api.md)

@@ -157,8 +157,7 @@ POST /checkout/v1/private/checkout/sessions
 
 Authoritative references:
 
-- [API naming convention](https://github.com/duynhlab/homelab/blob/main/docs/api/api-naming-convention.md)
-- [Endpoint inventory](https://github.com/duynhlab/homelab/blob/main/docs/api/api.md)
+- [Shared API rules and endpoint inventory](https://github.com/duynhlab/homelab/blob/main/docs/api/api.md) — URL model, audiences, auth, errors, pagination
 
 ## Authentication
 
