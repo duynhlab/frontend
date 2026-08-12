@@ -1,6 +1,4 @@
 import {
-    DEMO_PASSWORD,
-    DEMO_USER,
     SEED_NOTIFICATIONS,
     SEED_ORDERS,
     SEED_PROFILE,
@@ -23,7 +21,6 @@ function createStore() {
         profile: { ...SEED_PROFILE },
         reviews: [],
         checkoutSessions: new Map(),
-        credentials: { username: DEMO_USER.username, password: DEMO_PASSWORD },
     };
 }
 
@@ -31,9 +28,4 @@ let store = createStore();
 
 export function getMockStore() {
     return store;
-}
-
-/** Reset in-memory state to seed data (e.g. after logout in mock mode). */
-export function resetMockStore() {
-    store = createStore();
 }

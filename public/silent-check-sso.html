@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Silent SSO check</title>
+    </head>
+    <body>
+        <!--
+            keycloak-js silent check-sso callback: loaded in a hidden iframe by
+            init({ onLoad: 'check-sso', silentCheckSsoRedirectUri }); it hands
+            the authorization response back to the adapter in the parent frame.
+        -->
+        <script>
+            parent.postMessage(location.href, location.origin);
+        </script>
+    </body>
+</html>

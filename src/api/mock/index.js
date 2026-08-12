@@ -1,41 +1,10 @@
 import { mockDelay } from './delay';
 import { mockError } from './errors';
-import {
-    DEMO_USER,
-    MOCK_TOKENS,
-    TOTAL_MOCK_PRODUCTS,
-} from './seed';
-import { getMockStore, nextId, resetMockStore } from './store';
+import { DEMO_USER, TOTAL_MOCK_PRODUCTS } from './seed';
+import { getMockStore, nextId } from './store';
 
-export { resetMockStore };
-
-// ── Auth ────────────────────────────────────────────────────────────────────
-
-export async function mockLogin(username, password) {
-    await mockDelay();
-    const { credentials } = getMockStore();
-    if (username === credentials.username && password === credentials.password) {
-        return {
-            ...MOCK_TOKENS,
-            user: { ...DEMO_USER },
-        };
-    }
-    throw mockError('Invalid email or password', 401);
-}
-
-export async function mockRegister(username, _email, _password) {
-    await mockDelay();
-    return {
-        ...MOCK_TOKENS,
-        user: { id: nextId('user'), username, email: `${username}@example.com` },
-    };
-}
-
-export async function mockLogout() {
-    await mockDelay(100);
-    resetMockStore();
-    return { ok: true };
-}
+// Auth mocks were removed with the Keycloak migration (RFC-0022): mock-mode
+// login/logout is simulated by the mock adapter in src/auth/keycloak.js.
 
 // ── Products ────────────────────────────────────────────────────────────────
 

@@ -1,13 +1,13 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { Routes, Route, Link, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, NavLink, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { getCartCount } from './api/cartApi';
 import { getNotificationCount } from './api/notificationApi';
 import Footer from './components/common/Footer';
 import { GridSkeleton } from './components/common/Skeleton';
 import ProtectedRoute from './components/ProtectedRoute';
-import { clearSession } from './auth/session';
+import { useAuth } from './hooks/useAuth';
 
 // Code splitting: Lazy load pages for better initial bundle size
 const HomePage = lazy(() => import('./pages/HomePage/HomePage'));
@@ -26,8 +26,8 @@ const LoginPage = lazy(() => import('./pages/LoginPage/LoginPage'));
  * Uses GET /cart/v1/private/cart/count and /notification/v1/private/notifications/count for badges with SWR
  */
 function App() {
-    const navigate = useNavigate();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // Keycloak-backed auth state (updates on the adapter's auth events).
+    const { isAuthenticated, logout } = useAuth();
 
     // SWR for cart count - automatic deduplication, caching, and smart revalidation
     // Only fetches when authenticated, revalidates on focus/reconnect
@@ -57,30 +57,11 @@ function App() {
     const cartCount = cartData?.count || 0;
     const notificationCount = notificationData?.count || 0;
 
-    const checkAuth = () => {
-        const token = localStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
+    // Ends the Keycloak SSO session and redirects back to the SPA origin —
+    // no client-side navigation needed, the page leaves for the IdP.
+    const handleLogout = () => {
+        logout();
     };
-
-    const handleLogout = async () => {
-        await clearSession();
-        setIsAuthenticated(false);
-        navigate('/login');
-    };
-
-    useEffect(() => {
-        checkAuth();
-        // Listen for storage changes (e.g., login/logout in other tabs or from LoginPage)
-        const handleStorage = () => checkAuth();
-        window.addEventListener('storage', handleStorage);
-        // Listen for custom auth-change event (same tab)
-        window.addEventListener('auth-change', handleStorage);
-
-        return () => {
-            window.removeEventListener('storage', handleStorage);
-            window.removeEventListener('auth-change', handleStorage);
-        };
-    }, []);
 
     return (
         <div className="app">
