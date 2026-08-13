@@ -9,6 +9,7 @@ import ApiDebug from '../../components/common/ApiDebug';
 import QuantitySelector from '../../components/domain/QuantitySelector';
 import StarRating from '../../components/common/StarRating';
 import { useToast } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { getProductDetails } from '../../api/productApi';
 import { addToCart } from '../../api/cartApi';
@@ -69,20 +70,9 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [adding, setAdding] = useState(false);
 
-    // Auth state - moved to useMemo to avoid localStorage reads in render
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [authUser, setAuthUser] = useState(null);
-
-    useEffect(() => {
-        const token = localStorage.getItem('authToken');
-        setIsAuthenticated(!!token);
-        try {
-            const stored = localStorage.getItem('authUser');
-            setAuthUser(stored ? JSON.parse(stored) : null);
-        } catch {
-            setAuthUser(null);
-        }
-    }, []);
+    // Auth state from the Keycloak singleton. authUser.id is the Keycloak
+    // subject (`sub`) — an opaque string, never a numeric id.
+    const { isAuthenticated, user: authUser } = useAuth();
 
     // Review form state
     const [reviewForm, setReviewForm] = useState({ rating: 5, title: '', comment: '' });
@@ -283,18 +273,13 @@ export default function ProductDetailPage() {
                             {!isAuthenticated ? (
                                 // Not logged in: show login prompt
                                 <div className="empty" style={{ padding: '1rem' }}>
-                                    <p>Please log in or sign up to write a review.</p>
+                                    <p>Please log in to write a review.</p>
                                     <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                         <button
                                             className="primary"
-                                            onClick={() => navigate('/login?mode=login&returnTo=' + encodeURIComponent(`/products/${id}#reviews`))}
+                                            onClick={() => navigate('/login?returnTo=' + encodeURIComponent(`/products/${id}#reviews`))}
                                         >
                                             Login
-                                        </button>
-                                        <button
-                                            onClick={() => navigate('/login?mode=register&returnTo=' + encodeURIComponent(`/products/${id}#reviews`))}
-                                        >
-                                            Register
                                         </button>
                                     </div>
                                 </div>

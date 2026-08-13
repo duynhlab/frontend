@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSWRConfig } from 'swr';
 import { getCart, updateCartItem, removeCartItem } from '../../api/cartApi';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { formatCurrency } from '../../utils/formatCurrency';
 import ApiDebug from '../../components/common/ApiDebug';
@@ -19,8 +20,8 @@ export default function CartPage() {
     const { mutate: globalMutate } = useSWRConfig();
     const [actionLoading, setActionLoading] = useState(null);
 
-    // Check authentication
-    const isAuthenticated = !!localStorage.getItem('authToken');
+    // Check authentication (Keycloak-backed)
+    const { isAuthenticated } = useAuth();
 
     // Server state via SWR (shares the 'cart' key with Checkout)
     const { data: cart, loading, error, mutate } = useApiQuery(

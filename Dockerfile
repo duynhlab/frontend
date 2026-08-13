@@ -10,6 +10,16 @@ RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 # deploy (config.js honors "" via ?? — see src/api/config.js).
 ARG API_BASE_URL
 
+# Keycloak OIDC build arguments (same conditional-bake pattern as
+# API_BASE_URL — see src/auth/keycloak.js for the in-code defaults):
+#   KEYCLOAK_URL       unset → http://localhost:8081 (local dev); the cluster
+#                      build passes https://id.duynh.me
+#   KEYCLOAK_REALM     unset → duynhlab
+#   KEYCLOAK_CLIENT_ID unset → customer-spa
+ARG KEYCLOAK_URL
+ARG KEYCLOAK_REALM
+ARG KEYCLOAK_CLIENT_ID
+
 # Set working directory
 WORKDIR /app
 
@@ -27,6 +37,9 @@ COPY . .
 # as the same-origin topology — so every CI image sent the cluster SPA's
 # API calls to its own nginx origin (405 at login).
 RUN if [ -n "${API_BASE_URL+x}" ]; then export VITE_API_BASE_URL="$API_BASE_URL"; fi \
+    && if [ -n "${KEYCLOAK_URL+x}" ]; then export VITE_KEYCLOAK_URL="$KEYCLOAK_URL"; fi \
+    && if [ -n "${KEYCLOAK_REALM+x}" ]; then export VITE_KEYCLOAK_REALM="$KEYCLOAK_REALM"; fi \
+    && if [ -n "${KEYCLOAK_CLIENT_ID+x}" ]; then export VITE_KEYCLOAK_CLIENT_ID="$KEYCLOAK_CLIENT_ID"; fi \
     && npm run build
 
 # Verify dist folder was created

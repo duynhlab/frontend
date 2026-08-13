@@ -19,8 +19,10 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Log in with username **`alice`** /
-password **`password123`**. Checkout promo code in mock mode: **`save10`**.
+Open http://localhost:3000. Mock mode also fakes the Keycloak session: click
+**Sign in with Keycloak** on `/login` and you are logged in as **`alice`**
+(no password, no Keycloak container). Checkout promo code in mock mode:
+**`save10`**.
 
 ### Option B — Local stack or gateway
 
@@ -31,19 +33,22 @@ run the [homelab local-stack](https://github.com/duynhlab/homelab/tree/main/loca
 docker compose up -d --build
 ```
 
-Point the frontend at the gateway and disable mock mode:
+Point the frontend at the gateway and Keycloak, and disable mock mode:
 
 ```bash
 # .env
 VITE_USE_MOCK=false
 VITE_API_BASE_URL=http://localhost:8080
+VITE_KEYCLOAK_URL=http://localhost:8081
+VITE_KEYCLOAK_REALM=duynhlab
+VITE_KEYCLOAK_CLIENT_ID=customer-spa
 ```
 
-Then `npm install && npm run dev`. Log in as **`alice`** / **`password123`** by
-**username**, not email.
+Then `npm install && npm run dev`. Signing in redirects to the Keycloak login
+page — log in as **`alice`** / **`password123`** by **username**, not email.
 
 Production builds default to `https://gateway.duynh.me` when `VITE_API_BASE_URL` is
-unset.
+unset; the cluster image build passes `KEYCLOAK_URL=https://id.duynh.me`.
 
 ## Features
 
@@ -55,7 +60,9 @@ unset.
 - **Orders** — order history and status tracking
 - **Notifications** — unread badge, mark-as-read, mark-all
 - **Profile** — view and edit user profile
-- **Authentication** — login/register with RS256 JWTs and silent token refresh
+- **Authentication** — OpenID Connect via Keycloak (Authorization Code + PKCE
+  S256, `keycloak-js`); silent SSO resume and token refresh are handled by the
+  adapter
 
 ## Tech stack
 
@@ -65,6 +72,7 @@ unset.
 | Build | Vite 8 |
 | Routing | React Router 7 |
 | HTTP | axios (shared client with auth interceptors) |
+| Auth | Keycloak (`keycloak-js`, OIDC Code + PKCE S256) |
 | Server state | SWR |
 | Notifications | react-hot-toast |
 | Runtime | Node 24, npm only |
@@ -75,10 +83,10 @@ unset.
 frontend/
 ├── src/
 │   ├── api/              # Axios client + one module per backend service
-│   │   ├── client.js     #   interceptors (auth header, 401 silent refresh)
+│   │   ├── client.js     #   interceptors (bearer token via keycloak-js, errors)
 │   │   ├── config.js     #   gateway origin from VITE_API_BASE_URL
 │   │   └── mock/         #   in-memory store when VITE_USE_MOCK=true
-│   ├── auth/             # token storage, session logout
+│   ├── auth/             # keycloak.js — keycloak-js singleton (+ mock adapter)
 │   ├── components/       # common/, domain/, layout/
 │   ├── hooks/            # useAuth, useProducts, useApiQuery, useApiMutation, useToast
 │   ├── pages/            # one folder per route
@@ -125,7 +133,11 @@ npx playwright install chromium
 | Name | Default | Purpose |
 |------|---------|---------|
 | `VITE_API_BASE_URL` | `https://gateway.duynh.me` | Kong gateway origin. Use `http://localhost:8080` for local-stack. Baked in at **build time** — changing it requires a rebuild. |
-| `VITE_USE_MOCK` | `false` | When `true`, all `src/api/*` modules serve from the in-memory mock store (`src/api/mock/`). No gateway required. |
+| `VITE_USE_MOCK` | `false` | When `true`, all `src/api/*` modules serve from the in-memory mock store (`src/api/mock/`) and auth uses the mock Keycloak adapter. No gateway or Keycloak required. |
+| `VITE_KEYCLOAK_URL` | `http://localhost:8081` | Keycloak origin (cluster: `https://id.duynh.me`). Baked in at **build time**. |
+| `VITE_KEYCLOAK_REALM` | `duynhlab` | Keycloak realm name. |
+| `VITE_KEYCLOAK_CLIENT_ID` | `customer-spa` | Public OIDC client id (Code + PKCE S256, no secret). |
+| `VITE_KEYCLOAK_MOCK` | `false` | Test-only: swap in the mock Keycloak adapter without enabling API mocks (used by Playwright). |
 
 Copy [`.env.example`](.env.example) to `.env` and adjust for your setup.
 
@@ -138,8 +150,9 @@ rewriting):
 {VITE_API_BASE_URL}/{service}/v1/{audience}/{resource…}
 ```
 
-- **Services:** `auth`, `user`, `product`, `cart`, `order`, `review`, `notification`,
-  `shipping`, `checkout`
+- **Services:** `user`, `product`, `cart`, `order`, `review`, `notification`,
+  `shipping`, `checkout` (authentication is an OIDC redirect to Keycloak, not a
+  platform service call)
 - **Audience:** `public` (anonymous) or `private` (JWT). Never `internal`.
 - Each `src/api/*.js` module owns its `/{service}/v1/{audience}` prefix; `config.js`
   decides only the host.
@@ -149,9 +162,9 @@ rewriting):
 Examples:
 
 ```
-POST /auth/v1/public/auth/login
 GET  /product/v1/public/products?page=1&page_size=24
 GET  /product/v1/public/products/{id}/details
+GET  /cart/v1/private/cart
 POST /checkout/v1/private/checkout/sessions
 ```
 
@@ -162,20 +175,28 @@ Authoritative references:
 
 ## Authentication
 
-- **Access token** — RS256 JWT in `localStorage.authToken`
-- **Refresh token** — rotating pair in `localStorage.authRefreshToken`
-- **Request flow** — `client.js` attaches `Authorization: Bearer <access>` on every
-  request
-- **Silent refresh** — on `401`, one refresh call fires (single-flight per tab; Web
-  Locks serialise across tabs) via `POST /auth/v1/public/auth/refresh`, then the
-  original request retries once. If refresh fails, the session clears and the app
-  redirects to `/login`.
-- **Badge pollers** — cart and notification count requests set `skipAuthRefresh: true`
-  so a failed refresh does not redirect mid-session; they still attempt refresh.
-- **Logout** — `POST /auth/v1/public/auth/logout` with `{ refresh_token }` revokes the
-  token family server-side; local state clears regardless of the response.
-- **Demo account** — username `alice`, password `password123` (seeded in platform
-  auth-db). Log in by **username**, not email.
+Authentication is delegated to **Keycloak** (realm `duynhlab`, public client
+`customer-spa`) using OpenID Connect **Authorization Code + PKCE S256** via the
+`keycloak-js` adapter (`src/auth/keycloak.js`).
+
+- **Login** — `/login` shows a single button that redirects to the Keycloak
+  login page (Direct Access Grants are disabled — there is no in-app password
+  form; self-registration is off in this release).
+- **Tokens** — managed **in memory** by keycloak-js (15-minute access tokens).
+  Nothing auth-related is written to localStorage; SSO session continuity comes
+  from the Keycloak cookie, resumed silently at startup (`check-sso` +
+  `public/silent-check-sso.html`).
+- **Request flow** — `client.js` awaits `keycloak.updateToken(30)` before each
+  request and attaches `Authorization: Bearer <token>`. If refresh fails, the
+  app redirects to the Keycloak login page.
+- **Badge pollers** — cart and notification count requests set
+  `skipAuthRefresh: true` so a failed refresh never redirects mid-session.
+- **User identity** — read from token claims: `sub` (opaque string user id),
+  `preferred_username`, `email`.
+- **Logout** — `keycloak.logout({ redirectUri: origin })` ends the SSO session
+  and returns to the app.
+- **Demo account** — username `alice`, password `password123` (seeded in the
+  Keycloak realm). Log in by **username**, not email.
 
 ## Testing
 
@@ -183,6 +204,11 @@ End-to-end tests live in `e2e/` and use Playwright with `page.route()` mocks —
 gateway is required. `playwright.config.js` starts Vite via `webServer` and sets
 `VITE_USE_MOCK=false` so HTTP is intercepted at the network layer rather than by the
 in-app mock store.
+
+Auth in E2E defaults to the **mock Keycloak adapter** (`VITE_KEYCLOAK_MOCK=true`),
+so no Keycloak container is needed. Run with `E2E_REAL_KEYCLOAK=1` to drive the
+real Keycloak login form at `VITE_KEYCLOAK_URL` (e.g. the local-stack container
+on `http://localhost:8081`).
 
 CI runs lint, build, and E2E on every pull request (`.github/workflows/check.yml`).
 

@@ -5,6 +5,7 @@ import {
     createSession, setAddress, setShipping, setPayment, applyPromo, removePromo,
     confirmSession, cancelSession, idempotencyKeyFor, clearIdempotencyKey,
 } from '../../api/checkoutApi';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { toUserFriendlyError } from '../../utils/errorMessages';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -52,7 +53,7 @@ export default function CheckoutFlowPage() {
     const [promoError, setPromoError] = useState(null);
     const headingRef = useRef(null);
 
-    const isAuthenticated = !!localStorage.getItem('authToken');
+    const { isAuthenticated } = useAuth();
 
     const bootSession = useCallback(async () => {
         setLoadError(null);

@@ -9,7 +9,6 @@ function loadFixture(name) {
     return JSON.parse(readFileSync(join(fixturesDir, name), 'utf8'));
 }
 
-const authLogin = loadFixture('auth-login.json');
 const productDetail = loadFixture('product-detail.json');
 
 const PRODUCT_NAMES = [
@@ -62,24 +61,12 @@ function buildProductsPage(pageNum, pageSize = DEFAULT_PAGE_SIZE) {
 /**
  * Intercept gateway-shaped API calls and fulfill with fixture JSON.
  * Matches paths from src/api/* — no live backend required.
+ *
+ * Authentication is NOT mocked here: login goes through Keycloak (or the
+ * mock adapter in src/auth/keycloak.js when VITE_KEYCLOAK_MOCK=true — the
+ * default for E2E, see playwright.config.js).
  */
 export async function installApiMocks(page) {
-    await page.route('**/auth/v1/public/auth/login', async (route) => {
-        await route.fulfill({ json: authLogin });
-    });
-
-    await page.route('**/auth/v1/public/auth/register', async (route) => {
-        await route.fulfill({ json: authLogin });
-    });
-
-    await page.route('**/auth/v1/public/auth/refresh', async (route) => {
-        await route.fulfill({ json: authLogin });
-    });
-
-    await page.route('**/auth/v1/public/auth/logout', async (route) => {
-        await route.fulfill({ json: { ok: true } });
-    });
-
     await page.route(/\/product\/v1\/public\/products(\?.*)?$/, async (route) => {
         const url = new URL(route.request().url());
         const pageNum = Number(url.searchParams.get('page')) || 1;

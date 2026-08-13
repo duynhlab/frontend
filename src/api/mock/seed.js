@@ -1,20 +1,16 @@
 /**
  * Seed fixtures for VITE_USE_MOCK=true local development.
- * Demo login: username `alice`, password `password123` (see AGENTS.md).
+ * Mock-mode auth is simulated by the mock adapter in src/auth/keycloak.js,
+ * which uses DEMO_USER as the "logged in" identity (no password involved —
+ * the real demo credentials alice / password123 live in the Keycloak realm).
  */
 
 export const DEMO_USERNAME = 'alice';
-export const DEMO_PASSWORD = 'password123';
 
 export const DEMO_USER = {
     id: 'user-alice-001',
     username: DEMO_USERNAME,
     email: 'alice@example.com',
-};
-
-export const MOCK_TOKENS = {
-    access_token: 'mock-access-token-alice',
-    refresh_token: 'mock-refresh-token-alice',
 };
 
 export const SEED_PROFILE = {
