@@ -46,6 +46,21 @@ jobs:
       image-name: '${{ github.event.repository.name }}'
       push: true
       sbom: true
+      # CLUSTER CONTRACT. The SPA bakes VITE_* at build time, so the published
+      # image — not a runtime env var — decides which platform it talks to. The
+      # API origin already defaults to the cloud gateway, but KEYCLOAK_URL
+      # defaults to http://localhost:8081 (the compose origin), so an image
+      # built without this arg sends a cluster deployment's sign-in to the
+      # viewer's own laptop and fails only in the browser, after the rollout
+      # reports healthy. kubernetes/apps/frontend-rs.yaml documents this
+      # contract; nothing enforced it until now. Realm and client are passed
+      # explicitly too, so the image states its identity rather than relying on
+      # in-code defaults that happen to match.
+      build-args: |
+        API_BASE_URL=https://gateway.duynh.me
+        KEYCLOAK_URL=https://id.duynh.me
+        KEYCLOAK_REALM=duynhlab
+        KEYCLOAK_CLIENT_ID=customer-spa
       # Sortable tag for Flux image automation (staging ImagePolicy sorts on
       # the run number), alongside the default immutable sha- tag. On a v*
       # tag push the reusable workflow already emits X.Y.Z and X.Y (leading
