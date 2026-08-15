@@ -63,7 +63,12 @@
     --secondary: oklch(0.965 0.005 245);
     --secondary-foreground: oklch(0.25 0.012 250);
     --muted: oklch(0.965 0.005 245);
-    --muted-foreground: oklch(0.55 0.012 250);
+    /* 0.52, not 0.55: muted text sits on the muted surface itself in the
+       status chips and the checkout banners, and at 0.55 that pairing
+       measures 4.4:1 — just under the 4.5 AA floor. Against the page
+       background it was always fine, which is why only a light-theme axe run
+       catches it. */
+    --muted-foreground: oklch(0.52 0.012 250);
     --accent: oklch(0.94 0.008 240);
     --accent-foreground: oklch(0.25 0.012 250);
     --destructive: oklch(0.52 0.19 27);
