@@ -424,9 +424,22 @@ function Checkout() {
         <h1 className="text-2xl font-semibold tracking-tight">Checkout</h1>
         <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm text-destructive-on-tint">{loadError}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => void boot()}>
-            Try again
-          </Button>
+          {/* Retrying is not always the answer. A quote can also fail because
+              one item in the cart cannot be quoted at all — the service
+              reports that as a retryable 503, so the copy cannot tell the two
+              apart. Offer the cart as the other way out. */}
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            If this keeps happening, an item in your cart may not be available
+            to order. Remove it and try again.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => void boot()}>
+              Try again
+            </Button>
+            <Button variant="ghost" size="sm" render={<Link to="/cart" />}>
+              Back to cart
+            </Button>
+          </div>
         </div>
       </div>
     )
