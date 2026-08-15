@@ -175,7 +175,7 @@ function CartPage() {
           title="Your cart is empty"
           description="Nothing here yet."
           action={
-            <Button variant="outline" render={<Link to="/" />}>
+            <Button variant="outline" render={<Link to="/products" />}>
               Browse the store
             </Button>
           }

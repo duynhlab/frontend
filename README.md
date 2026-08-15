@@ -88,9 +88,14 @@ frontend/
 └── vite.config.ts
 ```
 
-Routes: `/` (the catalog), `/products/:id`, `/cart`, `/checkout`, `/orders`,
-`/orders/:id`, `/notifications`, `/profile`, `/login`. `/products` redirects to
-`/` for old links.
+Routes: `/` (home — a search box and the category buckets), `/products` (the
+full catalog, with search, category filter and paging in the URL),
+`/products/:id`, `/cart`, `/checkout`, `/orders`, `/orders/:id`,
+`/notifications`, `/profile`, `/login`.
+
+The home page shows no product rail on purpose: the platform has no featured
+flag, no bestseller signal and no rating on a list item, so any such strip
+would be a label the data cannot support.
 
 ## Development
 

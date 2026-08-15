@@ -3,8 +3,8 @@ import { expectNoA11yViolations, SEEDED_PRODUCT } from './helpers'
 
 test.describe('catalog', () => {
   test('lists the live catalog and pages through it', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'Store', level: 1 })).toBeVisible()
+    await page.goto('/products')
+    await expect(page.getByRole('heading', { name: 'All products', level: 1 })).toBeVisible()
 
     // Real products from product-service, not fixtures.
     await expect(
@@ -26,7 +26,7 @@ test.describe('catalog', () => {
   test('search narrows the catalog and the filter can be cleared', async ({
     page,
   }) => {
-    await page.goto('/')
+    await page.goto('/products')
     await page.getByLabel('Search products').fill('Mouse')
     await page.getByRole('button', { name: 'Search', exact: true }).click()
 
@@ -51,7 +51,9 @@ test.describe('catalog', () => {
   test('a nonsense page number degrades to page 1 rather than erroring', async ({
     page,
   }) => {
-    await page.goto('/?page=not-a-number')
-    await expect(page.getByRole('heading', { name: 'Store', level: 1 })).toBeVisible()
+    await page.goto('/products?page=not-a-number')
+    await expect(
+      page.getByRole('heading', { name: 'All products', level: 1 }),
+    ).toBeVisible()
   })
 })

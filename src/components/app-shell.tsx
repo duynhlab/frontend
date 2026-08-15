@@ -44,7 +44,13 @@ function CountBadge({ count }: { count: number }) {
   )
 }
 
-function NavLink({ to, children }: { to: '/' | '/orders'; children: string }) {
+function NavLink({
+  to,
+  children,
+}: {
+  to: '/products' | '/orders'
+  children: string
+}) {
   return (
     <Link
       to={to}
@@ -147,12 +153,13 @@ export function AppShell() {
 
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
+          {/* The wordmark goes home; the nav goes shopping. */}
           <Link to="/" className="font-semibold tracking-tight">
             duynhlab
           </Link>
 
           <nav aria-label="Primary" className="flex items-center gap-0.5">
-            <NavLink to="/">Store</NavLink>
+            <NavLink to="/products">Products</NavLink>
             {isAuthenticated ? <NavLink to="/orders">Orders</NavLink> : null}
             {/* Checkout only appears when there is something to check out —
                 an empty cart would dead-end on the funnel's CONFLICT. */}
