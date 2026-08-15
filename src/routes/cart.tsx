@@ -224,6 +224,9 @@ function CartPage() {
               <dt>Total</dt>
               <dd className="tabular-nums">{formatMoney(cart.total)}</dd>
             </dl>
+            <Button className="mt-4 w-full" render={<Link to="/checkout" />}>
+              Proceed to checkout
+            </Button>
             <p className="mt-3 text-xs text-muted-foreground">
               Shipping and totals are re-quoted at checkout against live prices.
             </p>

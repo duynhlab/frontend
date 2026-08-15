@@ -1,12 +1,14 @@
-import { Link, Outlet } from '@tanstack/react-router'
+import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Monitor, Moon, ShoppingBag, Sun } from 'lucide-react'
+import { Bell, Monitor, Moon, ShoppingBag, Sun, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cartCountQuery } from '@/features/cart/queries'
+import { notificationCountQuery } from '@/features/notifications/queries'
 import { useAuth } from '@/hooks/use-auth'
 import { useTheme } from '@/hooks/use-theme'
 import { auth } from '@/lib/auth'
 import type { Theme } from '@/lib/theme'
+import { cn } from '@/lib/utils'
 
 const THEMES: Array<{ value: Theme; label: string; Icon: typeof Sun }> = [
   { value: 'light', label: 'Light', Icon: Sun },
@@ -32,60 +34,108 @@ function ThemeToggle() {
   )
 }
 
-function CartButton() {
-  const { isAuthenticated } = useAuth()
-  // Polled, and refetched on focus, so a cart changed in another tab shows up
-  // here without a reload. The poll is a background call: a dead SSO session
-  // fails it quietly instead of yanking the shopper to the login page.
-  const count = useQuery(cartCountQuery(isAuthenticated)).data?.count ?? 0
-
+/** A count badge that only appears when there is something to say. */
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="relative"
-      aria-label={
-        isAuthenticated ? `Cart, ${count} item${count === 1 ? '' : 's'}` : 'Cart'
-      }
-      render={<Link to="/cart" />}
-    >
-      <ShoppingBag className="size-4" />
-      {count > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground">
-          {count}
-        </span>
-      ) : null}
-    </Button>
+    <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground">
+      {count > 99 ? '99+' : count}
+    </span>
   )
 }
 
-function AccountControls() {
-  const { isAuthenticated, username } = useAuth()
+function NavLink({ to, children }: { to: '/' | '/orders'; children: string }) {
+  return (
+    <Link
+      to={to}
+      {...(to === '/orders' ? { search: { page: 1 } } : {})}
+      className="rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-foreground"
+    >
+      {children}
+    </Link>
+  )
+}
 
-  if (!isAuthenticated) {
-    return (
-      <Button
-        size="sm"
-        onClick={() => auth.login(window.location.pathname + window.location.search)}
-      >
-        Sign in
-      </Button>
-    )
-  }
+function ShopperControls() {
+  const { isAuthenticated, username } = useAuth()
+  const location = useRouterState({ select: (s) => s.location })
+  const cartCount = useQuery(cartCountQuery(isAuthenticated)).data?.count ?? 0
+  const bellCount =
+    useQuery(notificationCountQuery(isAuthenticated)).data?.count ?? 0
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="hidden text-[13px] text-muted-foreground sm:inline">
-        {username}
-      </span>
-      <Button variant="outline" size="sm" onClick={() => auth.logout()}>
-        Sign out
+    <div className="flex items-center gap-1">
+      <ThemeToggle />
+
+      {isAuthenticated ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={`Notifications, ${bellCount} unread`}
+          render={<Link to="/notifications" />}
+        >
+          <Bell className="size-4" />
+          <CountBadge count={bellCount} />
+        </Button>
+      ) : null}
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative"
+        aria-label={
+          isAuthenticated
+            ? `Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`
+            : 'Cart'
+        }
+        render={<Link to="/cart" />}
+      >
+        <ShoppingBag className="size-4" />
+        <CountBadge count={cartCount} />
       </Button>
+
+      {isAuthenticated ? (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Profile (${username})`}
+            render={<Link to="/profile" />}
+          >
+            <User className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-1"
+            onClick={() => auth.logout()}
+          >
+            Sign out
+          </Button>
+        </>
+      ) : (
+        <Button
+          size="sm"
+          className="ml-1"
+          render={
+            <Link
+              to="/login"
+              search={{ redirect: location.pathname + location.searchStr }}
+            />
+          }
+        >
+          Sign in
+        </Button>
+      )}
     </div>
   )
 }
 
 export function AppShell() {
+  const { isAuthenticated } = useAuth()
+  const cartCount = useQuery(cartCountQuery(isAuthenticated)).data?.count ?? 0
+
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -96,24 +146,28 @@ export function AppShell() {
       </a>
 
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
           <Link to="/" className="font-semibold tracking-tight">
             duynhlab
           </Link>
 
-          <nav aria-label="Primary" className="flex items-center gap-1">
-            <Link
-              to="/"
-              className="rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-foreground"
-            >
-              Store
-            </Link>
+          <nav aria-label="Primary" className="flex items-center gap-0.5">
+            <NavLink to="/">Store</NavLink>
+            {isAuthenticated ? <NavLink to="/orders">Orders</NavLink> : null}
+            {/* Checkout only appears when there is something to check out —
+                an empty cart would dead-end on the funnel's CONFLICT. */}
+            {isAuthenticated && cartCount > 0 ? (
+              <Link
+                to="/checkout"
+                className="rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-foreground"
+              >
+                Checkout
+              </Link>
+            ) : null}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <CartButton />
-            <AccountControls />
+          <div className={cn('ml-auto')}>
+            <ShopperControls />
           </div>
         </div>
       </header>
@@ -123,8 +177,12 @@ export function AppShell() {
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-xs text-muted-foreground">
-          A demo storefront for the duynhlab platform. Nothing here ships.
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted-foreground">
+          <p>A demo storefront for the duynhlab platform. Nothing here ships.</p>
+          <p>
+            Everything on screen comes from the live services — there is no mock
+            data.
+          </p>
         </div>
       </footer>
     </div>
