@@ -9,8 +9,9 @@ pnpm-debug.log*
 dist/
 build/
 
-# Environment files
+# Environment files. The image gets its config from build args, never a file.
 .env
+.env.development
 .env.local
 .env.*.local
 
