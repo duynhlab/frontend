@@ -1,17 +1,20 @@
 # ===================================
-# Stage 1: Build Frontend with Node 24
+# Stage 1: Build Frontend with Node 26
 # ===================================
+# NOTE: CI lints and builds on Node 24 (check.yml, .nvmrc), so the released
+# image is produced on a runtime CI never exercises. admin-service has the
+# same drift; aligning the fleet is its own change, not this one.
 FROM node:26-alpine AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 
 # Build argument for API base URL. Leave it UNSET for the cloud topology
-# (config.js then defaults to https://gateway.duynh.me); pass a value to
-# override — including an explicit "" for the same-origin/reverse-proxy
-# deploy (config.js honors "" via ?? — see src/api/config.js).
+# (.env then supplies https://gateway.duynh.me); pass a value to override —
+# including an explicit "" for the same-origin/reverse-proxy deploy, which
+# src/lib/api.ts honors via `??`.
 ARG API_BASE_URL
 
 # Keycloak OIDC build arguments (same conditional-bake pattern as
-# API_BASE_URL — see src/auth/keycloak.js for the in-code defaults):
+# API_BASE_URL — see src/lib/auth.ts for the in-code defaults):
 #   KEYCLOAK_URL       unset → http://localhost:8081 (local dev); the cluster
 #                      build passes https://id.duynh.me
 #   KEYCLOAK_REALM     unset → duynhlab
