@@ -12,8 +12,11 @@ const badgeVariants = cva(
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+        // text-destructive-on-tint, not text-destructive: the base token is
+        // tuned for a solid surface and measures 3.98:1 on `bg-destructive/10`
+        // at this size, under the 4.5:1 WCAG AA floor. Same fix as the portal.
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+          "bg-destructive/10 text-destructive-on-tint focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:

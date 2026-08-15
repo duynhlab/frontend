@@ -79,6 +79,13 @@
     --input: oklch(0.9 0.006 245);
     --ring: oklch(0.6 0.07 226);
     --radius: 0.625rem;
+    /* Product placeholder tiles. Only the hue is per-product; lightness and
+       chroma are theme-owned, so a grid of tiles cannot stay bright in dark
+       mode the way a hardcoded pastel would. */
+    --tile-bg-l: 0.95;
+    --tile-bg-c: 0.03;
+    --tile-fg-l: 0.45;
+    --tile-fg-c: 0.08;
 }
 
 .dark {
@@ -106,6 +113,10 @@
     --border: oklch(0.3 0.012 250);
     --input: oklch(0.32 0.012 250);
     --ring: oklch(0.6 0.07 226);
+    --tile-bg-l: 0.27;
+    --tile-bg-c: 0.035;
+    --tile-fg-l: 0.82;
+    --tile-fg-c: 0.07;
 }
 
 @layer base {

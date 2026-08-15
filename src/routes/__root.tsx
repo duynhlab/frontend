@@ -1,6 +1,7 @@
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
+import { createRootRouteWithContext } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import type { AuthApi } from '@/lib/auth'
+import { AppShell } from '@/components/app-shell'
 import { Toaster } from '@/components/ui/toast'
 
 export interface RouterContext {
@@ -15,7 +16,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   return (
     <Toaster>
-      <Outlet />
+      <AppShell />
     </Toaster>
   )
 }
