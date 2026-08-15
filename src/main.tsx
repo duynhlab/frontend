@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+import { NotFound, RouteError } from '@/components/route-fallbacks'
 import { auth, initAuth } from '@/lib/auth'
 import { queryClient } from '@/lib/query'
 import { initTheme } from '@/lib/theme'
@@ -14,6 +15,11 @@ const router = createRouter({
   defaultPreload: 'intent',
   // Remote data is cached by TanStack Query, not the router.
   defaultPreloadStaleTime: 0,
+  // Without these two, an unknown address and a render failure both fall back
+  // to bare framework text with no shell — which reads as a broken site
+  // rather than a wrong link.
+  defaultNotFoundComponent: NotFound,
+  defaultErrorComponent: RouteError,
 })
 
 declare module '@tanstack/react-router' {
