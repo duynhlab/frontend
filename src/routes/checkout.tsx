@@ -348,12 +348,14 @@ function Checkout() {
       setSession(next)
       clearIdempotencyKey(session.id)
       toast.add({ title: 'Order placed', type: 'success' })
-      // The cart is consumed by a confirmed order, but the service clears it
-      // asynchronously — invalidating alone re-read the OLD count and left a
-      // stale badge until the next poll. Assert the outcome, then reconcile.
+      // A confirmed order consumes the cart, but cart-service clears it
+      // ASYNCHRONOUSLY. Invalidating here races that: the refetch lands first,
+      // reads the pre-clear count, and overwrites the zero — so the badge
+      // jumps back to the old number until the next poll. Assert the outcome
+      // instead, and drop the cached cart rather than re-reading it now; the
+      // badge's own 10s poll is what reconciles if anything went wrong.
       queryClient.setQueryData(cartKeys.count, { count: 0 })
-      void queryClient.invalidateQueries({ queryKey: cartKeys.cart })
-      void queryClient.invalidateQueries({ queryKey: cartKeys.count })
+      queryClient.removeQueries({ queryKey: cartKeys.cart })
     } catch (error) {
       // The key is intentionally NOT cleared here: pressing Place order again
       // must be the same attempt, not a second charge.

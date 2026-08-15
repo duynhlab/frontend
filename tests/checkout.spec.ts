@@ -70,8 +70,14 @@ test.describe('checkout', () => {
       timeout: 30_000,
     })
 
-    // A confirmed order consumes the cart.
-    await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeVisible()
+    // A confirmed order consumes the cart. The badge asserts zero immediately,
+    // but cart-service clears asynchronously and the badge polls every 10s — a
+    // poll landing inside that window reads the real, not-yet-cleared count and
+    // briefly shows it again. The guarantee is that it settles at zero within
+    // one poll cycle, so that is what this waits for.
+    await expect(page.getByRole('link', { name: 'Cart, 0 items' })).toBeVisible({
+      timeout: 15_000,
+    })
   })
 
   test('a bad promo code is reported beside the field, not as a toast', async ({
