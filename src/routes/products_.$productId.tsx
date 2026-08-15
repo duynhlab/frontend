@@ -275,7 +275,7 @@ function ProductDetail() {
         title="This product is not available"
         description="It may have been withdrawn from the catalog."
         action={
-          <Button variant="outline" size="sm" render={<Link to="/" search={{ page: 1 }} />}>
+          <Button variant="outline" size="sm" render={<Link to="/products" />}>
             Back to the store
           </Button>
         }
@@ -300,8 +300,7 @@ function ProductDetail() {
   return (
     <div className="flex flex-col gap-10">
       <Link
-        to="/"
-        search={{ page: 1 }}
+        to="/products"
         className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" />
@@ -318,8 +317,8 @@ function ProductDetail() {
             <h1 className="text-2xl font-semibold tracking-tight">{product.name}</h1>
             {product.category ? (
               <Link
-                to="/"
-                search={{ page: 1, category: product.category }}
+                to="/products"
+                search={{ category: product.category }}
                 className="w-fit text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
               >
                 {product.category}

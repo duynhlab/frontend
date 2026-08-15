@@ -58,7 +58,7 @@ function Orders() {
           title="No orders yet"
           description="Orders you place will show up here."
           action={
-            <Button variant="outline" render={<Link to="/" />}>
+            <Button variant="outline" render={<Link to="/products" />}>
               Browse the store
             </Button>
           }

@@ -411,7 +411,7 @@ function Checkout() {
           title="Your cart is empty"
           description="Add something before checking out."
           action={
-            <Button variant="outline" render={<Link to="/" />}>
+            <Button variant="outline" render={<Link to="/products" />}>
               Browse the store
             </Button>
           }
@@ -472,7 +472,7 @@ function Checkout() {
         </p>
         <div className="flex gap-2">
           <Button render={<Link to="/orders" search={{ page: 1 }} />}>View orders</Button>
-          <Button variant="outline" render={<Link to="/" />}>
+          <Button variant="outline" render={<Link to="/products" />}>
             Continue shopping
           </Button>
         </div>
