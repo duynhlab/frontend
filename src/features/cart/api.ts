@@ -3,9 +3,10 @@ import { apiFetch } from '@/lib/api'
 /**
  * Cart reads and commands — Variant A edge paths, all private (JWT required).
  *
- * The cart is server-owned: every mutation answers with the authoritative
- * cart, and the badge count is derived from that answer rather than
- * incremented locally. Two tabs adding the same item must not drift.
+ * The cart is server-owned. Note what the writes do NOT return: all three
+ * answer `{"message": "..."}`, not the updated cart. So a caller must re-read
+ * the cart after a write and derive the badge from THAT — writing the response
+ * straight into the cache silently empties the page.
  */
 
 export interface CartItem {
@@ -14,12 +15,17 @@ export interface CartItem {
   product_name: string
   product_price: number
   quantity: number
+  subtotal: number
 }
 
 export interface Cart {
-  id?: string
+  user_id: string
   items: Array<CartItem>
-  total?: number
+  subtotal: number
+  shipping: number
+  total: number
+  /** Distinct lines, not units — the badge counts units (see getCartCount). */
+  item_count: number
 }
 
 export interface CartCount {
@@ -42,13 +48,18 @@ export function getCartCount(signal?: AbortSignal): Promise<CartCount> {
   })
 }
 
+/** Acknowledgement only — re-read the cart to see the result. */
+interface CartAck {
+  message: string
+}
+
 export function addToCart(input: {
   productId: string
   productName: string
   productPrice: number
   quantity: number
-}): Promise<Cart> {
-  return apiFetch<Cart>('/cart/v1/private/cart', {
+}): Promise<CartAck> {
+  return apiFetch<CartAck>('/cart/v1/private/cart', {
     method: 'POST',
     body: {
       product_id: input.productId,
@@ -59,15 +70,18 @@ export function addToCart(input: {
   })
 }
 
-export function updateCartItem(itemId: string, quantity: number): Promise<Cart> {
-  return apiFetch<Cart>(
+export function updateCartItem(
+  itemId: string,
+  quantity: number,
+): Promise<CartAck> {
+  return apiFetch<CartAck>(
     `/cart/v1/private/cart/items/${encodeURIComponent(itemId)}`,
     { method: 'PATCH', body: { quantity } },
   )
 }
 
-export function removeCartItem(itemId: string): Promise<Cart> {
-  return apiFetch<Cart>(
+export function removeCartItem(itemId: string): Promise<CartAck> {
+  return apiFetch<CartAck>(
     `/cart/v1/private/cart/items/${encodeURIComponent(itemId)}`,
     { method: 'DELETE' },
   )

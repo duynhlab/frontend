@@ -1,6 +1,8 @@
 import { Link, Outlet } from '@tanstack/react-router'
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Monitor, Moon, ShoppingBag, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cartCountQuery } from '@/features/cart/queries'
 import { useAuth } from '@/hooks/use-auth'
 import { useTheme } from '@/hooks/use-theme'
 import { auth } from '@/lib/auth'
@@ -26,6 +28,33 @@ function ThemeToggle() {
       onClick={() => setTheme(next.value)}
     >
       <current.Icon className="size-4" />
+    </Button>
+  )
+}
+
+function CartButton() {
+  const { isAuthenticated } = useAuth()
+  // Polled, and refetched on focus, so a cart changed in another tab shows up
+  // here without a reload. The poll is a background call: a dead SSO session
+  // fails it quietly instead of yanking the shopper to the login page.
+  const count = useQuery(cartCountQuery(isAuthenticated)).data?.count ?? 0
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative"
+      aria-label={
+        isAuthenticated ? `Cart, ${count} item${count === 1 ? '' : 's'}` : 'Cart'
+      }
+      render={<Link to="/cart" />}
+    >
+      <ShoppingBag className="size-4" />
+      {count > 0 ? (
+        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold tabular-nums text-primary-foreground">
+          {count}
+        </span>
+      ) : null}
     </Button>
   )
 }
@@ -83,6 +112,7 @@ export function AppShell() {
 
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            <CartButton />
             <AccountControls />
           </div>
         </div>
