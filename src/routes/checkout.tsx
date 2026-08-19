@@ -185,6 +185,9 @@ function Checkout() {
 
   const [session, setSession] = useState<CheckoutSession | null>(null)
   const [loadError, setLoadError] = useState<'empty-cart' | string | null>(null)
+  // Set when the load failure is the persistent ITEM_NOT_ORDERABLE conflict
+  // (ADR-053): retrying cannot succeed, so the screen drops its retry button.
+  const [loadNotOrderable, setLoadNotOrderable] = useState(false)
   const [busy, setBusy] = useState(false)
   const [address, setAddressForm] = useState<Address>(EMPTY_ADDRESS)
   const [shippingMethod, setShippingMethod] = useState<string>(
@@ -206,6 +209,7 @@ function Checkout() {
     try {
       const fresh = await createSession()
       setSession(fresh)
+      setLoadNotOrderable(false)
       if (fresh.address) setAddressForm((prev) => ({ ...prev, ...fresh.address }))
       if (fresh.shipping_method) setShippingMethod(fresh.shipping_method)
     } catch (error) {
@@ -213,6 +217,7 @@ function Checkout() {
         setLoadError('empty-cart')
         return
       }
+      setLoadNotOrderable(error instanceof ApiError && error.code === 'ITEM_NOT_ORDERABLE')
       setLoadError(errorCopy(error, 'Checkout could not be started.'))
     }
   }, [navigate])
@@ -249,6 +254,8 @@ function Checkout() {
    *
    *   429 — the gateway limiter. Never retried; retrying feeds it.
    *   503 — a dependency failing over. run() already made ONE paced retry.
+   *         (Since ADR-053 no checkout 503 carries a session — the untracked-SKU
+   *         requote moved to the 409-with-session branch below.)
    *   410 — the session aged out. Start a fresh one, and drop the dead
    *         session's idempotency key so it does not linger forever.
    *   409 with a session — a requote. Show the new quote FIRST, then explain,
@@ -265,7 +272,6 @@ function Checkout() {
         title: 'The service is busy right now — please try again in a moment.',
         type: 'warning',
       })
-      if (error.session) setSession(error.session as CheckoutSession)
       return
     }
     if (error instanceof ApiError && error.status === 410) {
@@ -426,18 +432,22 @@ function Checkout() {
         <h1 className="text-2xl font-semibold tracking-tight">Checkout</h1>
         <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
           <p className="text-sm text-destructive-on-tint">{loadError}</p>
-          {/* Retrying is not always the answer. A quote can also fail because
-              one item in the cart cannot be quoted at all — the service
-              reports that as a retryable 503, so the copy cannot tell the two
-              apart. Offer the cart as the other way out. */}
-          <p className="mt-2 text-[13px] text-muted-foreground">
-            If this keeps happening, an item in your cart may not be available
-            to order. Remove it and try again.
-          </p>
+          {/* ITEM_NOT_ORDERABLE (ADR-053) is a persistent conflict: the copy
+              already says what to do and a retry cannot succeed, so that case
+              hides both the generic hint and the retry button. Every other
+              failure keeps them — a transient 503 may well clear. */}
+          {!loadNotOrderable ? (
+            <p className="mt-2 text-[13px] text-muted-foreground">
+              If this keeps happening, an item in your cart may not be available
+              to order. Remove it and try again.
+            </p>
+          ) : null}
           <div className="mt-3 flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void boot()}>
-              Try again
-            </Button>
+            {!loadNotOrderable ? (
+              <Button variant="outline" size="sm" onClick={() => void boot()}>
+                Try again
+              </Button>
+            ) : null}
             <Button variant="ghost" size="sm" render={<Link to="/cart" />}>
               Back to cart
             </Button>
