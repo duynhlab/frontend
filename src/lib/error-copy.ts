@@ -16,6 +16,10 @@ import { ApiError } from '@/lib/api'
 const CODE_COPY: Record<string, string> = {
   STOCK_UNAVAILABLE:
     'Some items are no longer available — your quote was refreshed with what is in stock.',
+  // The persistent sibling of STOCK_UNAVAILABLE (ADR-053): the SKU has no
+  // inventory balance row, so waiting cannot fix it — no retry language here.
+  ITEM_NOT_ORDERABLE:
+    'An item in your cart cannot be ordered right now — remove it and try again later.',
   PRICE_CHANGED:
     'Prices changed since you carted these items — review the updated quote and confirm again.',
   PROMO_INVALID: 'That promo code does not exist.',
