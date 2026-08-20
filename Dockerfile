@@ -4,7 +4,10 @@
 # NOTE: CI lints and builds on Node 24 (check.yml, .nvmrc), so the released
 # image is produced on a runtime CI never exercises. admin-service has the
 # same drift; aligning the fleet is its own change, not this one.
-FROM node:26-alpine AS builder
+# --platform pins the builder to the BUILD host. The vite output in dist/ is
+# architecture-independent, so a multi-arch build only pays for the runtime
+# stage instead of running npm ci + vite under emulation.
+FROM --platform=$BUILDPLATFORM node:26-alpine AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 
 # Build argument for API base URL. Leave it UNSET for the cloud topology
