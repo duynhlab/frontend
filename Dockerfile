@@ -1,13 +1,14 @@
 # ===================================
 # Stage 1: Build Frontend with Node 26
 # ===================================
-# NOTE: CI lints and builds on Node 24 (check.yml, .nvmrc), so the released
-# image is produced on a runtime CI never exercises. admin-service has the
-# same drift; aligning the fleet is its own change, not this one.
+# Node 26 here, in CI (check.yml/build.yml) and in .nvmrc/engines: one line,
+# so the released image is built on the runtime CI tests. Both base images are
+# pinned by tag and digest so a Dependabot bump changes the FROM text, which
+# also invalidates the registry-cached apk upgrade layers below.
 # --platform pins the builder to the BUILD host. The vite output in dist/ is
 # architecture-independent, so a multi-arch build only pays for the runtime
 # stage instead of running npm ci + vite under emulation.
-FROM --platform=$BUILDPLATFORM node:26-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:26.10.0-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS builder
 RUN apk add --no-cache --upgrade zlib libcrypto3 libssl3 nghttp2-libs
 
 # Build argument for API base URL. Leave it UNSET for the cloud topology
@@ -54,7 +55,7 @@ RUN ls -la /app/dist
 # ===================================
 # Stage 2: Production with Nginx
 # ===================================
-FROM nginx:alpine
+FROM nginx:1.31.6-alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2
 # Upgrade all OS packages to clear known Alpine CVEs in the runtime image
 # (this is the image Trivy scans). A full upgrade is more durable than a fixed
 # package list — e.g. libcrypto3/libssl3 (CVE-2026-45447) and libxml2
