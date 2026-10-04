@@ -13,6 +13,9 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   workers: 1,
+  // A spec drives Keycloak, the dev server and the real services serially;
+  // several take 25-36s, so the 30s default fails them on a slow run.
+  timeout: 60_000,
   forbidOnly: !!process.env['CI'],
   retries: 0,
   reporter: [['list']],
