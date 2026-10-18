@@ -34,7 +34,7 @@ jobs:
         run: npm run build
 
   gitleaks:
-    uses: duynhlab/gha-workflows/.github/workflows/gitleaks.yml@01b026fe370fe39c2402e0738d696847ac3134a9 # main
+    uses: duynhlab/gha-workflows/.github/workflows/gitleaks.yml@d8157b5f98ca20d667deb50511e9b27531a77f7c # main
     permissions:
       contents: read
       security-events: write
