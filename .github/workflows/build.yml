@@ -41,7 +41,7 @@ jobs:
 
   docker-build:
     needs: [lint, gitleaks]
-    uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@01b026fe370fe39c2402e0738d696847ac3134a9 # main
+    uses: duynhlab/gha-workflows/.github/workflows/docker-build-node.yml@d8157b5f98ca20d667deb50511e9b27531a77f7c # main
     with:
       image-name: '${{ github.event.repository.name }}'
       push: true
