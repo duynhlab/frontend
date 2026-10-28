@@ -104,7 +104,7 @@ jobs:
   notify:
     if: always()
     needs: [lint, gitleaks, docker-build, trivy-scan, docker-sign]
-    uses: duynhlab/gha-workflows/.github/workflows/status.yml@cc687b8a22c98ea19f33ca10f1958b47bf1b01ec # main
+    uses: duynhlab/gha-workflows/.github/workflows/status.yml@f7d2c1737e97dd0d1577209a995b1dfe79df1d48 # main
     with:
       slack_channel_id: "C0AD82A9A74"
       gsheet_spreadsheet_id: "1F2VUrAOyMGnETApp5yA-ldCW81ConiQXnWYZVxKas_0"
